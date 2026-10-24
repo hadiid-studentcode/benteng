@@ -1,0 +1,52 @@
+#!/bin/sh
+# BENTENG agent: mengirim buffer query DNS ke server pusat dalam bentuk JSON.
+# Dijalankan tiap menit oleh cron.
+
+SERVER="http://192.168.56.1:8000/api/ingest/dns"
+TOKEN="GANTI-DENGAN-TOKEN-ACAK"
+SENSOR="BTG-02"
+
+BUF=/tmp/benteng-dns.buf
+SEND=/tmp/benteng-dns.send
+OUT=/tmp/benteng-dns.json
+
+# Pindahkan buffer baru ke antrean kirim. Kalau pengiriman sebelumnya gagal,
+# antrean lama tetap ada dan data baru ditambahkan di belakangnya.
+if [ -s "$BUF" ]; then
+	cat "$BUF" >> "$SEND"
+	rm -f "$BUF"
+fi
+[ -s "$SEND" ] || exit 0
+
+# Contoh baris logread:
+# Sat Oct 24 17:16:17 2026 daemon.info dnsmasq[1]: 1 192.168.1.142/60011 query[A] example.com from 192.168.1.142
+awk -v s="$SENSOR" '
+/query\[/ {
+	t = ""; d = ""; ip = ""
+	for (i = 1; i <= NF; i++) {
+		if ($i ~ /^query\[/) { t = $i; d = $(i + 1); ip = $(i + 3) }
+	}
+	if (d == "" || ip == "") next
+	gsub(/query\[|\]/, "", t)
+	ts = $2 " " $3 " " $4 " " $5
+	if (n++) printf ","
+	else printf "{\"sensor\":\"%s\",\"events\":[", s
+	printf "{\"ts\":\"%s\",\"type\":\"%s\",\"domain\":\"%s\",\"client\":\"%s\"}", ts, t, d, ip
+}
+END { if (n) print "]}" }
+' "$SEND" > "$OUT"
+
+if [ ! -s "$OUT" ]; then
+	rm -f "$SEND"
+	exit 0
+fi
+
+if wget -q -O /dev/null \
+	--header="X-Sensor-Token: $TOKEN" \
+	--header="Content-Type: application/json" \
+	--post-file="$OUT" "$SERVER"; then
+	rm -f "$SEND" "$OUT"
+	logger -t benteng-agent "terkirim ke server"
+else
+	logger -t benteng-agent "gagal kirim, dicoba lagi menit berikutnya"
+fi

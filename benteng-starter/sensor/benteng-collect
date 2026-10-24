@@ -1,0 +1,8 @@
+#!/bin/sh
+# BENTENG collector: menyalin setiap baris query DNS dari log sistem ke buffer.
+# Dijalankan terus-menerus oleh /etc/init.d/benteng-collect.
+BUF=/tmp/benteng-dns.buf
+
+logread -f -e 'query\[' | while read -r line; do
+	echo "$line" >> "$BUF"
+done
