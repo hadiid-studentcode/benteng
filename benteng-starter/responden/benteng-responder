@@ -1,0 +1,61 @@
+#!/bin/sh
+# BENTENG responder: menarik perintah dari server dan menjalankannya di sensor.
+# Perintah dari server berupa baris teks: "<id> <aksi> <ip>".
+# aksi: quarantine | unquarantine. Dijalankan terus-menerus oleh procd.
+
+SERVER="http://192.168.56.1:8000"
+TOKEN="36a748bd3c6e51456afaa23354cd0990"
+SENSOR="BTG-02"
+JEDA=5
+
+# Pastikan tabel nftables BENTENG ada (idempoten).
+pastikan_nft() {
+	if ! nft list table inet benteng >/dev/null 2>&1; then
+		nft -f /etc/benteng/benteng-nft.conf
+	fi
+}
+
+# Validasi sederhana bentuk IPv4, supaya nilai aneh tidak masuk ke perintah nft.
+ip_valid() {
+	echo "$1" | grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}$'
+}
+
+pastikan_nft
+
+while :; do
+	RESP=$(wget -q -O - --header="X-Sensor-Token: $TOKEN" "$SERVER/api/sensors/$SENSOR/commands" 2>/dev/null)
+
+	# Setiap baris: "<id> <aksi> <ip>"
+	echo "$RESP" | while read -r id aksi ip sisa; do
+		[ -z "$id" ] && continue
+		if ! ip_valid "$ip"; then
+			H="gagal"
+		else
+			case "$aksi" in
+				quarantine)
+					if nft add element inet benteng karantina_v4 "{ $ip }" 2>/dev/null; then
+						H="ok"
+					else
+						H="gagal"
+					fi
+					;;
+				unquarantine)
+					nft delete element inet benteng karantina_v4 "{ $ip }" 2>/dev/null
+					# Menghapus elemen yang sudah tidak ada tetap dianggap berhasil.
+					H="ok"
+					;;
+				*)
+					H="gagal"
+					;;
+			esac
+		fi
+
+		wget -q -O /dev/null \
+			--post-data="hasil=$H" \
+			--header="X-Sensor-Token: $TOKEN" \
+			"$SERVER/api/sensors/$SENSOR/commands/$id/ack" 2>/dev/null
+		logger -t benteng-responder "$aksi $ip -> $H"
+	done
+
+	sleep "$JEDA"
+done
