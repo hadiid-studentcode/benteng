@@ -63,9 +63,13 @@ return [
     | will be used by the PHP date and date-time functions. The timezone
     | is set to "UTC" by default as it is suitable for most use cases.
     |
+    | BENTENG memakai WIB: sensor menulis log dnsmasq dalam WIB dan
+    | IngestController mem-parse-nya sebagai Asia/Jakarta, jadi semua
+    | timestamp (queried_at, created_at, audit) harus satu zona.
+    |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => 'Asia/Jakarta',
 
     /*
     |--------------------------------------------------------------------------

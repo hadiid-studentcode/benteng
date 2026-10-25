@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -11,6 +12,14 @@ use Illuminate\Support\Facades\DB;
  */
 class CommandController extends Controller
 {
+    /**
+     * Kunci cache waktu terakhir sensor menarik perintah.
+     */
+    public static function kunciDetak(string $sensor): string
+    {
+        return "benteng:detak:$sensor";
+    }
+
     private function cekToken(Request $request): void
     {
         $token = (string) config('benteng.sensor_token');
@@ -26,6 +35,9 @@ class CommandController extends Controller
     public function ambil(Request $request, string $sensor)
     {
         $this->cekToken($request);
+
+        // Responder menarik tiap 5 detik; dashboard memakai ini sebagai tanda sensor online.
+        Cache::forever(self::kunciDetak($sensor), now()->toDateTimeString());
 
         $commands = DB::table('commands')
             ->where('sensor', $sensor)
