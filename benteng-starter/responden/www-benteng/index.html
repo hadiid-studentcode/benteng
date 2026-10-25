@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="cache-control" content="no-store">
+<title>Perangkat dikarantina - BENTENG</title>
+<!-- Halaman mandiri tanpa sumber luar: perangkat karantina tidak punya akses internet. -->
+<style>
+  :root{--bg:#0E1311;--panel:#171D1A;--garis:#27302B;--teks:#E6EBE7;--redup:#9AA59F;--hijau:#A9CF7A;--karantina:#7FB1E6}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:var(--bg);color:var(--teks);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.55}
+  main{width:100%;max-width:560px;background:var(--panel);border:1px solid var(--garis);border-top:4px solid var(--karantina);border-radius:10px;padding:28px 24px;display:flex;flex-direction:column;gap:16px}
+  .merek{display:flex;align-items:center;gap:12px}
+  .merek b{letter-spacing:.08em}
+  .merek span{display:block;font-size:12px;color:var(--redup)}
+  h1{margin:0;font-size:24px}
+  p{margin:0}
+  .status{display:inline-block;font-size:13px;font-weight:600;padding:4px 12px;border-radius:999px;background:#1E3147;color:#B5D4F3}
+  ol{margin:0;padding-left:20px}
+  li{margin-bottom:6px}
+  .catatan{font-size:13px;color:var(--redup);border-top:1px solid var(--garis);padding-top:14px}
+</style>
+</head>
+<body>
+  <main>
+    <div class="merek">
+      <svg width="34" height="34" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 3 L27 7 V15 C27 22 22 27 16 29 C10 27 5 22 5 15 V7 Z" stroke="#7FB1E6" stroke-width="2" stroke-linejoin="round"/><path d="M11 11 L21 21 M21 11 L11 21" stroke="#7FB1E6" stroke-width="2" stroke-linecap="round"/></svg>
+      <div><b>BENTENG</b><span>Sensor siber jaringan satuan</span></div>
+    </div>
+
+    <span class="status">Perangkat dikarantina</span>
+    <h1>Perangkat ini diputus dari jaringan</h1>
+    <p>Sistem BENTENG mendeteksi aktivitas mencurigakan dari perangkat ini. Atas keputusan analis
+      jaringan satuan, perangkat diputus dari internet dan jaringan lain untuk mencegah penyebaran.</p>
+
+    <div>
+      <p><b>Yang harus Anda lakukan:</b></p>
+      <ol>
+        <li>Jangan matikan, jangan instal ulang, dan jangan hapus berkas apa pun. Bukti di perangkat diperlukan untuk pemeriksaan.</li>
+        <li>Jangan pindahkan berkas dari perangkat ini ke flashdisk atau perangkat lain.</li>
+        <li>Segera hubungi petugas TI/siber satuan dan sebutkan bahwa perangkat Anda dikarantina BENTENG.</li>
+      </ol>
+    </div>
+
+    <p class="catatan">Karantina akan dilepas oleh analis setelah perangkat diperiksa dan dinyatakan aman.
+      Tindakan ini tercatat di jejak audit BENTENG.</p>
+  </main>
+</body>
+</html>

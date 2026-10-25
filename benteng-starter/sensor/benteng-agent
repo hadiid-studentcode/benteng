@@ -1,18 +1,31 @@
 #!/bin/sh
-# BENTENG agent: mengirim baris log query DNS (apa adanya) ke server pusat.
-# Server yang mem-parse barisnya. Dijalankan tiap menit oleh cron.
+# BENTENG agent: mengirim baris log query DNS (apa adanya) dan daftar DHCP ke
+# server pusat. Server yang mem-parse barisnya. Dijalankan tiap menit oleh cron.
 
-SERVER="http://192.168.56.1:8000/api/ingest/dns"
-TOKEN="36a748bd3c6e51456afaa23354cd0990"
+BASE="http://192.168.56.1:8000"
+SERVER="$BASE/api/ingest/dns"
+SERVER_DHCP="$BASE/api/ingest/dhcp"
+TOKEN="GANTI-DENGAN-TOKEN-ACAK"
 SENSOR="BTG-02"
 
 BUF=/tmp/benteng-dns.buf
 SEND=/tmp/benteng-dns.send
+LEASES=/tmp/dhcp.leases
 LOCK=/tmp/benteng-agent.lock
 
 # Kunci: kalau agent lain masih jalan (misalnya cron terdaftar dua kali), keluar saja.
 mkdir "$LOCK" 2>/dev/null || exit 0
 trap 'rmdir "$LOCK"' EXIT
+
+# Daftar perangkat dari DHCP dikirim tiap menit, untuk deteksi perangkat asing.
+# Gagal kirim tidak masalah: daftar lengkap terkirim lagi menit berikutnya.
+if [ -s "$LEASES" ]; then
+	wget -q -O /dev/null \
+		--header="X-Sensor-Token: $TOKEN" \
+		--header="X-Sensor-Id: $SENSOR" \
+		--header="Content-Type: text/plain" \
+		--post-file="$LEASES" "$SERVER_DHCP" 2>/dev/null
+fi
 
 # Pindahkan buffer baru ke antrean kirim. Kalau pengiriman sebelumnya gagal,
 # antrean lama tetap ada dan data baru ditambahkan di belakangnya.

@@ -10,6 +10,8 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::post('/ingest/dns', [IngestController::class, 'dns']);
+Route::post('/ingest/dhcp', [IngestController::class, 'dhcp']);
 
 Route::get('/sensors/{sensor}/commands', [CommandController::class, 'ambil']);
 Route::post('/sensors/{sensor}/commands/{id}/ack', [CommandController::class, 'ack']);
+Route::get('/sensors/{sensor}/karantina', [CommandController::class, 'karantina']);

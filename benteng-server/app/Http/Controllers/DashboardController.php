@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Console\Commands\DeteksiCommand;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -18,6 +20,11 @@ class DashboardController extends Controller
     private const MENIT_GRAFIK = 60;
 
     /**
+     * Jumlah perangkat per sensor yang digambar di diagram topologi.
+     */
+    private const PERANGKAT_TOPOLOGI = 10;
+
+    /**
      * Dashboard analis. Bila diminta dengan header X-Benteng-Sebagian, hanya
      * fragmen "isi" yang dikirim; dipakai skrip penyegar otomatis di halaman.
      */
@@ -27,15 +34,7 @@ class DashboardController extends Controller
         $batas24 = $sekarang->copy()->subDay();
 
         $sensor = $this->statusSensor($sekarang);
-
-        $metrik = [
-            'sensorOnline' => $sensor->where('online', true)->count(),
-            'sensorTotal' => $sensor->count(),
-            'perangkat' => DB::table('dns_events')->distinct()->count('client_ip'),
-            'query24' => DB::table('dns_events')->where('queried_at', '>=', $batas24)->count(),
-            'insidenAktif' => DB::table('incidents')->where('status', 'baru')->count(),
-            'dikarantina' => DB::table('incidents')->where('status', 'dikarantina')->distinct()->count('client_ip'),
-        ];
+        $detektor = $this->statusDetektor($sekarang);
 
         // Insiden aktif di atas, lalu yang dikarantina, lalu false positive.
         $incidents = DB::table('incidents')
@@ -53,20 +52,26 @@ class DashboardController extends Controller
             $i->perintah = $perintahTerakhir->get($i->sensor.'|'.$i->client_ip);
         }
 
-        $perangkat = DB::table('dns_events')
-            ->select('client_ip', 'sensor', DB::raw('COUNT(*) as jumlah'), DB::raw('COUNT(DISTINCT domain) as domain_unik'),
-                DB::raw('MIN(queried_at) as awal'), DB::raw('MAX(queried_at) as akhir'))
-            ->groupBy('client_ip', 'sensor')
-            ->orderByDesc('jumlah')
-            ->limit(20)
-            ->get();
+        $perangkat = $this->daftarPerangkat($this->statusPerangkat());
 
-        // Status tiap perangkat ("sensor|ip"): dikarantina mengalahkan insiden aktif.
-        $statusPerangkat = DB::table('incidents')
-            ->whereIn('status', ['baru', 'dikarantina'])
-            ->get(['sensor', 'client_ip', 'status'])
-            ->groupBy(fn ($i) => $i->sensor.'|'.$i->client_ip)
-            ->map(fn ($grup) => $grup->contains('status', 'dikarantina') ? 'dikarantina' : 'insiden');
+        $metrik = [
+            'sensorOnline' => $sensor->where('online', true)->count(),
+            'sensorTotal' => $sensor->count(),
+            'perangkat' => $perangkat->count(),
+            'asing' => $perangkat->where('status', 'asing')->count(),
+            'query24' => DB::table('dns_events')->where('queried_at', '>=', $batas24)->count(),
+            'insidenAktif' => DB::table('incidents')->where('status', 'baru')->count(),
+            'dikarantina' => DB::table('incidents')->where('status', 'dikarantina')->distinct()->count('client_ip'),
+            'waktuDeteksi' => $this->medianDetik(DB::table('incidents')->whereNotNull('mulai_pada')->get(['mulai_pada as awal', 'created_at as akhir'])),
+            'responsSensor' => $this->medianDetik(DB::table('commands')->where('status', 'selesai')->get(['created_at as awal', 'selesai_pada as akhir'])),
+        ];
+
+        $topologi = $sensor->map(fn (array $s) => [
+            ...$s,
+            'info' => config('benteng.sensor_info')[$s['nama']] ?? [],
+            'perangkat' => $perangkat->where('sensor', $s['nama'])->take(self::PERANGKAT_TOPOLOGI)->values(),
+            'lainnya' => max(0, $perangkat->where('sensor', $s['nama'])->count() - self::PERANGKAT_TOPOLOGI),
+        ]);
 
         $audit = DB::table('audit_logs')
             ->orderByDesc('id')
@@ -74,17 +79,21 @@ class DashboardController extends Controller
             ->get();
 
         $aktivitas = $this->aktivitasPerMenit($sekarang);
+        $bisaBertindak = $request->user()->can('bertindak');
 
-        return view('benteng.dashboard', compact(
-            'sekarang', 'sensor', 'metrik', 'incidents', 'perangkat', 'statusPerangkat', 'audit', 'aktivitas'
-        ))->fragmentIf($request->hasHeader('X-Benteng-Sebagian'), 'isi');
+        /** @var View $view */
+        $view = view('benteng.dashboard', compact(
+            'sekarang', 'sensor', 'detektor', 'metrik', 'incidents', 'perangkat', 'topologi', 'audit', 'aktivitas', 'bisaBertindak'
+        ));
+
+        return $view->fragmentIf($request->hasHeader('X-Benteng-Sebagian'), 'isi');
     }
 
     /**
      * Analis menekan "Karantina": buat perintah untuk sensor dan tandai semua
      * insiden aktif perangkat itu, karena karantina berlaku per perangkat.
      */
-    public function karantina(int $id): RedirectResponse
+    public function karantina(Request $request, int $id): RedirectResponse
     {
         $insiden = DB::table('incidents')->find($id);
         if (! $insiden || $insiden->status !== 'baru') {
@@ -96,7 +105,7 @@ class DashboardController extends Controller
             return back()->with('galat', "IP {$insiden->client_ip} tidak bisa dikarantina (hanya IPv4).");
         }
 
-        DB::transaction(function () use ($insiden) {
+        DB::transaction(function () use ($insiden, $request) {
             $this->kirimPerintah($insiden, 'quarantine');
 
             DB::table('incidents')
@@ -105,39 +114,53 @@ class DashboardController extends Controller
                 ->where('status', 'baru')
                 ->update(['status' => 'dikarantina', 'updated_at' => now()]);
 
-            $this->catatAudit($insiden, 'minta karantina');
+            $this->catatAudit($request->user(), $insiden, 'minta karantina');
         });
 
         return back()->with('pesan', "Perintah karantina {$insiden->client_ip} dikirim ke {$insiden->sensor}. Menunggu sensor menerapkan.");
     }
 
     /**
-     * Analis menandai insiden sebagai false positive.
+     * Analis menandai insiden sebagai false positive. Untuk insiden perangkat
+     * asing, ini berarti perangkat didaftarkan sebagai perangkat sah satuan.
      */
-    public function falsePositive(int $id): RedirectResponse
+    public function falsePositive(Request $request, int $id): RedirectResponse
     {
         $insiden = DB::table('incidents')->find($id);
         if (! $insiden || $insiden->status !== 'baru') {
             return back()->with('galat', 'Insiden tidak ditemukan atau sudah ditangani.');
         }
 
-        DB::transaction(function () use ($insiden) {
+        $daftarkan = $insiden->jenis === 'perangkat_asing';
+
+        DB::transaction(function () use ($insiden, $request, $daftarkan) {
             DB::table('incidents')->where('id', $insiden->id)->update([
                 'status' => 'false_positive',
                 'updated_at' => now(),
             ]);
 
-            $this->catatAudit($insiden, 'tandai false positive');
+            if ($daftarkan) {
+                // Sidik perangkat asing berbentuk "asing|sensor|mac".
+                $mac = explode('|', $insiden->sidik, 3)[2] ?? '';
+                DB::table('perangkat')
+                    ->where('sensor', $insiden->sensor)
+                    ->where('mac', $mac)
+                    ->update(['dikenal' => true, 'updated_at' => now()]);
+            }
+
+            $this->catatAudit($request->user(), $insiden, $daftarkan ? 'daftarkan perangkat' : 'tandai false positive');
         });
 
-        return back()->with('pesan', "Insiden #{$insiden->id} ditandai false positive.");
+        return back()->with('pesan', $daftarkan
+            ? "Perangkat {$insiden->client_ip} didaftarkan sebagai perangkat sah."
+            : "Insiden #{$insiden->id} ditandai false positive.");
     }
 
     /**
      * Analis melepas karantina. Semua insiden perangkat yang dikarantina
      * kembali aktif agar tetap ditindaklanjuti.
      */
-    public function lepas(int $id): RedirectResponse
+    public function lepas(Request $request, int $id): RedirectResponse
     {
         $insiden = DB::table('incidents')->find($id);
         if (! $insiden || $insiden->status !== 'dikarantina') {
@@ -148,7 +171,7 @@ class DashboardController extends Controller
             return back()->with('galat', "IP {$insiden->client_ip} tidak valid.");
         }
 
-        DB::transaction(function () use ($insiden) {
+        DB::transaction(function () use ($insiden, $request) {
             $this->kirimPerintah($insiden, 'unquarantine');
 
             DB::table('incidents')
@@ -157,7 +180,7 @@ class DashboardController extends Controller
                 ->where('status', 'dikarantina')
                 ->update(['status' => 'baru', 'updated_at' => now()]);
 
-            $this->catatAudit($insiden, 'lepas karantina');
+            $this->catatAudit($request->user(), $insiden, 'lepas karantina');
         });
 
         return back()->with('pesan', "Perintah lepas karantina {$insiden->client_ip} dikirim ke {$insiden->sensor}.");
@@ -176,10 +199,11 @@ class DashboardController extends Controller
         ]);
     }
 
-    private function catatAudit(object $insiden, string $aksi): void
+    private function catatAudit(User $user, object $insiden, string $aksi): void
     {
         DB::table('audit_logs')->insert([
-            'pelaku' => 'analis',
+            'pelaku' => mb_substr($user->name, 0, 64),
+            'user_id' => $user->id,
             'aksi' => $aksi,
             'target' => $insiden->client_ip,
             'incident_id' => $insiden->id,
@@ -202,6 +226,7 @@ class DashboardController extends Controller
 
         $nama = $dataTerakhir->keys()
             ->merge(DB::table('commands')->distinct()->pluck('sensor'))
+            ->merge(DB::table('perangkat')->distinct()->pluck('sensor'))
             ->unique()
             ->sort()
             ->values();
@@ -219,6 +244,103 @@ class DashboardController extends Controller
                 'dataTerakhir' => isset($dataTerakhir[$s]) ? Carbon::parse($dataTerakhir[$s]) : null,
             ];
         });
+    }
+
+    /**
+     * @return array{detak: ?Carbon, jalan: bool}
+     */
+    private function statusDetektor(Carbon $sekarang): array
+    {
+        $detak = Cache::get(DeteksiCommand::KUNCI_DETAK);
+        $detak = $detak ? Carbon::parse($detak) : null;
+
+        return [
+            'detak' => $detak,
+            'jalan' => $detak !== null && $detak->greaterThanOrEqualTo($sekarang->copy()->subSeconds((int) config('benteng.detektor_online_detik'))),
+        ];
+    }
+
+    /**
+     * Status tiap perangkat ("sensor|ip"): dikarantina > insiden > asing.
+     *
+     * @return Collection<string, string>
+     */
+    private function statusPerangkat(): Collection
+    {
+        return DB::table('incidents')
+            ->whereIn('status', ['baru', 'dikarantina'])
+            ->get(['sensor', 'client_ip', 'status', 'jenis'])
+            ->groupBy(fn ($i) => $i->sensor.'|'.$i->client_ip)
+            ->map(fn (Collection $grup) => match (true) {
+                $grup->contains('status', 'dikarantina') => 'dikarantina',
+                $grup->contains(fn ($i) => $i->jenis !== 'perangkat_asing') => 'insiden',
+                default => 'asing',
+            });
+    }
+
+    /**
+     * Gabungan perangkat yang terlihat di DNS dan di DHCP, dikunci per sensor+IP.
+     *
+     * @param  Collection<string, string>  $statusPerangkat
+     * @return Collection<int, object>
+     */
+    private function daftarPerangkat(Collection $statusPerangkat): Collection
+    {
+        $daftar = [];
+
+        $dns = DB::table('dns_events')
+            ->select('client_ip', 'sensor', DB::raw('COUNT(*) as jumlah'), DB::raw('COUNT(DISTINCT domain) as domain_unik'),
+                DB::raw('MIN(queried_at) as awal'), DB::raw('MAX(queried_at) as akhir'))
+            ->groupBy('client_ip', 'sensor')
+            ->get();
+
+        foreach ($dns as $d) {
+            // 127.0.0.1 / ::1 adalah sensor itu sendiri (mis. sinkronisasi NTP), bukan perangkat jaringan.
+            if (! filter_var($d->client_ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_RES_RANGE)) {
+                continue;
+            }
+            $daftar[$d->sensor.'|'.$d->client_ip] = (object) [
+                'sensor' => $d->sensor, 'ip' => $d->client_ip, 'jumlah' => (int) $d->jumlah,
+                'domain_unik' => (int) $d->domain_unik, 'awal' => $d->awal, 'akhir' => $d->akhir,
+                'mac' => null, 'hostname' => null, 'dikenal' => null,
+            ];
+        }
+
+        // Lease terbaru per IP dipakai untuk MAC dan nama host.
+        foreach (DB::table('perangkat')->orderByDesc('terakhir_terlihat')->get() as $p) {
+            $kunci = $p->sensor.'|'.$p->ip;
+            $daftar[$kunci] ??= (object) [
+                'sensor' => $p->sensor, 'ip' => $p->ip, 'jumlah' => 0, 'domain_unik' => 0,
+                'awal' => $p->pertama_terlihat, 'akhir' => $p->terakhir_terlihat,
+                'mac' => null, 'hostname' => null, 'dikenal' => null,
+            ];
+            if ($daftar[$kunci]->mac === null) {
+                $daftar[$kunci]->mac = $p->mac;
+                $daftar[$kunci]->hostname = $p->hostname;
+                $daftar[$kunci]->dikenal = (bool) $p->dikenal;
+            }
+        }
+
+        foreach ($daftar as $kunci => $p) {
+            $p->status = $statusPerangkat->get($kunci) ?? ($p->dikenal === false ? 'asing' : 'normal');
+        }
+
+        return collect($daftar)->sortByDesc('jumlah')->values();
+    }
+
+    /**
+     * Median selisih detik antara kolom "awal" dan "akhir", atau null bila tidak ada data.
+     *
+     * @param  Collection<int, object{awal: string, akhir: string}>  $baris
+     */
+    private function medianDetik(Collection $baris): ?int
+    {
+        $selisih = $baris
+            ->filter(fn ($b) => $b->awal && $b->akhir)
+            ->map(fn ($b) => strtotime($b->akhir) - strtotime($b->awal))
+            ->filter(fn ($d) => $d >= 0);
+
+        return $selisih->isEmpty() ? null : (int) round($selisih->median());
     }
 
     /**

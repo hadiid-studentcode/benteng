@@ -58,6 +58,25 @@ class CommandController extends Controller
     }
 
     /**
+     * Daftar IP yang seharusnya sedang dikarantina oleh sensor ini, satu per baris.
+     * Responder memakainya saat mulai dan berkala, karena set nftables hilang saat sensor reboot.
+     */
+    public function karantina(Request $request, string $sensor)
+    {
+        $this->cekToken($request);
+
+        $ips = DB::table('incidents')
+            ->where('sensor', $sensor)
+            ->where('status', 'dikarantina')
+            ->distinct()
+            ->pluck('client_ip')
+            ->filter(fn ($ip) => filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4))
+            ->implode("\n");
+
+        return response($ips."\n", 200)->header('Content-Type', 'text/plain');
+    }
+
+    /**
      * Sensor melaporkan hasil sebuah perintah (hasil=ok|gagal).
      */
     public function ack(Request $request, string $sensor, int $id)

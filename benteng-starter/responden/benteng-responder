@@ -4,9 +4,11 @@
 # aksi: quarantine | unquarantine. Dijalankan terus-menerus oleh procd.
 
 SERVER="http://192.168.56.1:8000"
-TOKEN="36a748bd3c6e51456afaa23354cd0990"
+TOKEN="GANTI-DENGAN-TOKEN-ACAK"
 SENSOR="BTG-02"
 JEDA=5
+# Tiap sekian putaran (12 x 5 dtk = 1 menit) set karantina disamakan dengan server.
+SINKRON_TIAP=12
 
 # Pastikan tabel nftables BENTENG ada (idempoten).
 pastikan_nft() {
@@ -20,7 +22,21 @@ ip_valid() {
 	echo "$1" | grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}$'
 }
 
+# Set nftables hilang saat sensor reboot atau tabel dimuat ulang. Tambahkan lagi
+# semua IP yang menurut server sedang dikarantina. Hanya menambah: pelepasan
+# tetap lewat perintah "unquarantine" agar tercatat di jejak audit.
+sinkron_karantina() {
+	wget -q -O - --header="X-Sensor-Token: $TOKEN" "$SERVER/api/sensors/$SENSOR/karantina" 2>/dev/null |
+	while read -r ip sisa; do
+		if ip_valid "$ip"; then
+			nft add element inet benteng karantina_v4 "{ $ip }" 2>/dev/null
+		fi
+	done
+}
+
 pastikan_nft
+sinkron_karantina
+PUTARAN=0
 
 while :; do
 	RESP=$(wget -q -O - --header="X-Sensor-Token: $TOKEN" "$SERVER/api/sensors/$SENSOR/commands" 2>/dev/null)
@@ -56,6 +72,12 @@ while :; do
 			"$SERVER/api/sensors/$SENSOR/commands/$id/ack" 2>/dev/null
 		logger -t benteng-responder "$aksi $ip -> $H"
 	done
+
+	PUTARAN=$((PUTARAN + 1))
+	if [ $((PUTARAN % SINKRON_TIAP)) -eq 0 ]; then
+		pastikan_nft
+		sinkron_karantina
+	fi
 
 	sleep "$JEDA"
 done

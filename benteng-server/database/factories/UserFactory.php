@@ -28,9 +28,20 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
+            'peran' => 'analis',
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
+    }
+
+    /**
+     * Akun pengamat: hanya bisa melihat dashboard.
+     */
+    public function pengamat(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'peran' => 'pengamat',
+        ]);
     }
 
     /**
