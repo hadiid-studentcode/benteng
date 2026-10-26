@@ -4,6 +4,46 @@
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Hijau satuan: warna utama tombol, tautan, dan menu aktif. */
+    --color-brand-50: #eef6f1;
+    --color-brand-100: #d6eadf;
+    --color-brand-200: #afd5bf;
+    --color-brand-500: #3a8a62;
+    --color-brand-600: #2f7d57;
+    --color-brand-700: #276a4a;
+    --color-brand-800: #1f5139;
+    --color-sidebar: #15201a;
+}
+
+/* Garis server-sensor di diagram topologi bergerak saat sensor online. */
+@keyframes alir {
+    to {
+        stroke-dashoffset: -14;
+    }
+}
+
+.tautan-alir {
+    stroke-dasharray: 6 8;
+    animation: alir 1s linear infinite;
+}
+
+/* Sorotan singkat untuk baris insiden yang baru muncul setelah penyegaran. */
+@keyframes muncul {
+    from {
+        background-color: var(--color-red-100);
+    }
+}
+
+.baru-muncul {
+    animation: muncul 4s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tautan-alir,
+    .baru-muncul {
+        animation: none;
+    }
 }

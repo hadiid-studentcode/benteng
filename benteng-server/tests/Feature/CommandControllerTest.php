@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Http\Controllers\CommandController;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class CommandControllerTest extends TestCase
@@ -26,10 +25,10 @@ class CommandControllerTest extends TestCase
     public function test_sync_lists_only_quarantined_ipv4_devices_of_the_sensor(): void
     {
         config(['benteng.sensor_token' => 'token-uji']);
-        $this->buatInsiden('BTG-02', '192.168.1.142', 'dikarantina');
-        $this->buatInsiden('BTG-02', '192.168.1.142', 'dikarantina');
-        $this->buatInsiden('BTG-02', '192.168.1.150', 'baru');
-        $this->buatInsiden('BTG-03', '192.168.2.10', 'dikarantina');
+        $this->buatInsiden(['client_ip' => '192.168.1.142', 'status' => 'dikarantina']);
+        $this->buatInsiden(['client_ip' => '192.168.1.142', 'status' => 'dikarantina']);
+        $this->buatInsiden(['client_ip' => '192.168.1.150', 'status' => 'baru']);
+        $this->buatInsiden(['sensor' => 'BTG-03', 'client_ip' => '192.168.2.10', 'status' => 'dikarantina']);
 
         $response = $this->withHeader('X-Sensor-Token', 'token-uji')->get('/api/sensors/BTG-02/karantina');
 
@@ -45,14 +44,5 @@ class CommandControllerTest extends TestCase
 
         $response->assertUnauthorized();
         $this->assertNull(Cache::get(CommandController::kunciDetak('BTG-02')));
-    }
-
-    private function buatInsiden(string $sensor, string $ip, string $status): void
-    {
-        DB::table('incidents')->insert([
-            'sensor' => $sensor, 'client_ip' => $ip, 'jenis' => 'beaconing', 'tingkat' => 'kritis',
-            'skor' => 90, 'judul' => 'Insiden uji', 'status' => $status, 'sidik' => fake()->unique()->uuid(),
-            'created_at' => now(), 'updated_at' => now(),
-        ]);
     }
 }

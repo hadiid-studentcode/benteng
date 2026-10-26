@@ -27,9 +27,12 @@ masuk, dan mengisolasi perangkat yang terinfeksi.
   - **perangkat asing** (T1200): MAC baru yang muncul di DHCP setelah baseline.
 - ✅ **Evaluasi kualitas deteksi** yang bisa diulang: `php artisan benteng:deteksi --evaluasi --percobaan=100`
   → deteksi serangan **99,8%**, alarm palsu trafik normal **0%** (lihat bagian 8).
-- ✅ Dashboard `/dashboard` live (segar tiap 5 dtk tanpa kedip): status sensor & detektor,
-  **diagram topologi jaringan live**, grafik aktivitas DNS, insiden + bukti visual + playbook
-  bahasa Indonesia, jalur perintah ke sensor, jejak audit, tabel perangkat.
+- ✅ **Panel admin** dengan sidebar: Dashboard, Insiden (daftar + detail), Perangkat,
+  Topologi jaringan, Sensor, Jejak audit. Isi halaman diperbarui otomatis tiap 5 detik
+  tanpa kedip; badge sidebar menunjukkan insiden aktif dan perangkat belum dikenal.
+- ✅ Detail insiden: penjelasan bahasa awam, risiko, bukti visual (garis waktu beacon),
+  langkah penanganan, data perangkat, dan linimasa penanganan dari jejak audit.
+- ✅ Tindakan lewat **modal konfirmasi** (bukan `confirm()` browser) dan notifikasi toast.
 - ✅ **Login & peran**: `analis` (bisa bertindak) dan `pengamat` (hanya melihat, mis. pimpinan).
   Setiap tindakan tercatat atas nama akun di `audit_logs`.
 - ✅ Karantina: tombol di dashboard → sensor menjalankan `nftables` → koneksi
@@ -161,7 +164,11 @@ benteng/
 │  ├─ app/Http/Controllers/
 │  │  ├─ IngestController.php               # terima DNS & DHCP dari sensor
 │  │  ├─ CommandController.php              # perintah, ACK, sinkron karantina untuk sensor
-│  │  ├─ DashboardController.php            # dashboard + karantina/false positive/lepas
+│  │  ├─ DashboardController.php            # halaman Dashboard, Topologi, Sensor
+│  │  ├─ InsidenController.php              # daftar & detail insiden + karantina/bukan ancaman/lepas
+│  │  ├─ PerangkatController.php            # halaman Perangkat
+│  │  ├─ AuditController.php                # halaman Jejak audit
+│  │  ├─ Concerns/MembacaDataPantauan.php   # query baca bersama semua halaman
 │  │  └─ SesiController.php                 # login / logout
 │  ├─ app/Console/Commands/
 │  │  ├─ DeteksiCommand.php                 # detektor + --evaluasi
@@ -169,9 +176,11 @@ benteng/
 │  ├─ app/Models/User.php                   # peran analis / pengamat
 │  ├─ config/benteng.php                    # token, ambang, playbook, info topologi
 │  ├─ database/migrations/                  # dns_events, incidents, commands+audit_logs, perangkat, ...
-│  ├─ resources/views/benteng/              # dashboard.blade.php, login.blade.php
+│  ├─ resources/views/benteng/              # layout (sidebar), halaman, partials (topologi, grafik, tabel)
+│  ├─ resources/views/components/           # ikon, lencana, tombol, kartu, aksi-insiden, ...
+│  ├─ resources/{css/app.css, js/app.js}    # Tailwind v4 + modal, toast, penyegaran otomatis
 │  ├─ routes/{web.php, api.php, console.php}
-│  ├─ tests/Feature/                        # 35 test (php artisan test)
+│  ├─ tests/Feature/                        # 45 test (php artisan test)
 │  └─ docs/README.md                        # dokumen ini
 │
 └─ benteng-starter/                        # file untuk sensor & lab (disalin via scp)
@@ -239,11 +248,11 @@ Route::get('/sensors/{sensor}/karantina', [CommandController::class, 'karantina'
 ```php
 Route::redirect('/', '/dashboard');
 // guest: GET/POST /login (POST dibatasi 5x per menit)
-// auth:  POST /logout, GET /dashboard
+// auth:  POST /logout, GET /dashboard, /insiden, /insiden/{id}, /perangkat, /topologi, /sensor, /audit
 // auth + can:bertindak (hanya peran analis):
-Route::post('/dashboard/incidents/{id}/karantina', ...)->name('benteng.karantina');
-Route::post('/dashboard/incidents/{id}/false-positive', ...)->name('benteng.false-positive');
-Route::post('/dashboard/incidents/{id}/lepas', ...)->name('benteng.lepas');
+Route::post('/insiden/{id}/karantina', ...)->name('benteng.karantina');
+Route::post('/insiden/{id}/false-positive', ...)->name('benteng.false-positive');  // tombol "Bukan ancaman" / "Daftarkan sah"
+Route::post('/insiden/{id}/lepas', ...)->name('benteng.lepas');
 ```
 
 `routes/console.php`: `Schedule::command('benteng:deteksi')->everyMinute()->withoutOverlapping();`
@@ -322,10 +331,11 @@ query NTP korban tiap ~70 dtk ke `pool.ntp.org` juga tidak memicu alarm berkat d
 
 ## 9. Setup dari nol (ringkas)
 
-**Server (Windows, FlyEnv):**
+**Server (Windows, FlyEnv, PHP 8.5):**
 ```powershell
 cd benteng-server
 composer install
+npm install; npm run build   # tampilan (Tailwind) dibangun sekali; hasilnya lokal di public/build, tanpa CDN
 # .env: DB_CONNECTION=sqlite  +  BENTENG_SENSOR_TOKEN=<token acak: php -r "echo bin2hex(random_bytes(16));">
 php artisan migrate
 php artisan benteng:pengguna analis@satuan.mil --nama="Serda Budi"                   # sandi acak ditampilkan
@@ -414,14 +424,16 @@ termasuk akun) dan buat ulang akun dengan `benteng:pengguna`.
 
 ## 10. Alur demo (untuk video)
 
-1. Login sebagai analis. Tunjukkan **topologi live**: server → sensor → VM korban (hijau, normal).
+1. Login sebagai analis. Dashboard menampilkan banner hijau "Jaringan dalam kondisi aman"
+   dan topologi live: server → sensor → VM korban (hijau, normal).
 2. Jalankan simulator di VM korban. Grafik aktivitas DNS melonjak.
 3. Tanpa mengetik perintah apa pun: dalam 1–3 menit **insiden muncul sendiri**
-   (beaconing + DGA), kartu menyala, judul tab menjadi "(2) BENTENG".
-4. Buka bukti: garis waktu beacon yang rapi seperti jam, peluang kebetulan
-   "kurang dari 1 banding 1 miliar", playbook bahasa Indonesia.
+   (beaconing + DGA), banner berubah merah, badge sidebar Insiden menyala, judul tab menjadi "(2) ...".
+4. Buka **Detail** insiden: penjelasan bahasa awam, garis waktu beacon yang rapi seperti jam,
+   peluang kebetulan "kurang dari 1 banding 1 miliar", langkah penanganan.
 5. Split screen: terminal korban (kiri) + dashboard (kanan). Di korban `ping 8.8.8.8` → jalan.
-6. Klik **Karantina perangkat** → jalur perintah "diminta → diambil → diterapkan (3 dtk)";
+6. Klik **Karantina** → modal konfirmasi menjelaskan akibatnya → **Ya, karantina** →
+   toast "Berhasil", linimasa "Karantina diminta → Karantina diterapkan oleh sensor";
    di topologi, sambungan korban berubah biru dengan tanda ✕.
 7. Di korban `ping 8.8.8.8` → **gagal**; `wget -qO- http://neverssl.com` → halaman karantina. (momen kunci)
 8. Bonus: nyalakan perangkat/VM baru → muncul "Belum dikenal" (T1200) → analis daftarkan sebagai sah.

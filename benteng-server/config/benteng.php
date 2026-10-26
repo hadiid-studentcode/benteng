@@ -22,6 +22,13 @@ return [
     // Keterangan server pusat untuk diagram topologi.
     'server_info' => ['nama' => 'Server pusat', 'alamat' => '192.168.56.1:8000', 'keterangan' => 'Laravel · on-premise'],
 
+    // Label jenis insiden untuk tampilan.
+    'jenis' => [
+        'beaconing' => 'Beaconing',
+        'dga' => 'Domain acak (DGA)',
+        'perangkat_asing' => 'Perangkat asing',
+    ],
+
     // Nama teknik MITRE ATT&CK yang dipakai detektor.
     'attck' => [
         'T1071.004' => 'Application Layer Protocol: DNS',
@@ -44,7 +51,7 @@ return [
                 'Catat pemilik/pengguna perangkat dan sejak kapan perangkat dipakai.',
                 'Jangan instal ulang dulu: serahkan ke petugas siber satuan atas untuk diperiksa, bukti bisa hilang.',
                 'Periksa apakah perangkat lain menghubungi domain yang sama.',
-                'Bila domain itu ternyata layanan sah (mis. pembaruan aplikasi), tandai false positive.',
+                'Bila domain itu ternyata layanan sah (mis. pembaruan aplikasi), klik "Bukan ancaman".',
             ],
         ],
         'dga' => [
@@ -56,7 +63,7 @@ return [
                 'Karantina perangkat agar terputus dari jaringan.',
                 'Catat pemilik/pengguna perangkat dan aplikasi yang baru dipasang.',
                 'Jangan instal ulang dulu: serahkan ke petugas siber satuan atas untuk diperiksa, bukti bisa hilang.',
-                'Bila perangkat menjalankan aplikasi sah yang memang memakai nama acak (mis. CDN), tandai false positive.',
+                'Bila perangkat menjalankan aplikasi sah yang memang memakai nama acak (mis. CDN), klik "Bukan ancaman".',
             ],
         ],
         'perangkat_asing' => [
@@ -66,7 +73,7 @@ return [
                 .'atau menjadi pintu masuk malware ke jaringan satuan.',
             'langkah' => [
                 'Cek fisik: siapa pemilik perangkat dengan MAC dan nama host tersebut.',
-                'Bila sah (milik satuan atau sudah diizinkan), klik "Daftarkan perangkat sah".',
+                'Bila sah (milik satuan atau sudah diizinkan), klik "Daftarkan sah".',
                 'Bila pemilik tidak jelas, karantina perangkat dan laporkan ke petugas siber satuan atas.',
             ],
         ],

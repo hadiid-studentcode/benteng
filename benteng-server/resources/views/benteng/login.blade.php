@@ -1,61 +1,66 @@
 <!doctype html>
-<html lang="id">
+<html lang="id" class="h-full bg-white">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BENTENG - Masuk</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-<style>
-  :root{
-    --bg:#0E1311; --panel:#171D1A; --garis:#27302B; --garis2:#222A26;
-    --teks:#E6EBE7; --redup:#9AA59F; --terang:#C9D2CC;
-    --hijau:#A9CF7A; --kritis:#F07A6A;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:var(--bg);color:var(--teks);font-family:'IBM Plex Sans',system-ui,sans-serif}
-  .kotak{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--garis);border-radius:10px;padding:28px 24px;display:flex;flex-direction:column;gap:18px}
-  .merek{display:flex;align-items:center;gap:12px}
-  .judulmerek{font-size:18px;font-weight:600;letter-spacing:.08em}
-  .sub{font-size:12px;color:var(--redup)}
-  .mono{font-family:'IBM Plex Mono',monospace}
-  form{display:flex;flex-direction:column;gap:14px}
-  label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--terang)}
-  input[type=email],input[type=password]{font:inherit;font-size:15px;color:var(--teks);background:#0F1412;border:1px solid #3A453F;border-radius:6px;padding:10px 12px;min-height:42px}
-  input:focus-visible{outline:2px solid var(--hijau);outline-offset:1px;border-color:transparent}
-  .ingat{flex-direction:row;align-items:center;gap:8px;color:var(--redup)}
-  .galat{font-size:13px;color:#FFCFC7;background:#2A1715;border:1px solid #6A2C26;border-radius:6px;padding:10px 12px}
-  button{font:inherit;font-size:15px;font-weight:600;min-height:44px;border:0;border-radius:6px;background:var(--hijau);color:#10170F;cursor:pointer}
-  button:focus-visible{outline:2px solid var(--hijau);outline-offset:2px}
-</style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Masuk - BENTENG</title>
+    @fonts
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body>
-  <main class="kotak">
-    <div class="merek">
-      <svg width="30" height="30" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 3 L27 7 V15 C27 22 22 27 16 29 C10 27 5 22 5 15 V7 Z" stroke="#A9CF7A" stroke-width="2" stroke-linejoin="round"/><path d="M11 16 L15 20 L21 12" stroke="#A9CF7A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <div>
-        <div class="judulmerek">BENTENG</div>
-        <div class="sub">Masuk ke dashboard analis</div>
-      </div>
+<body class="h-full font-sans text-slate-800 antialiased">
+<div class="flex min-h-full">
+    <div class="relative hidden w-[44%] flex-col justify-between bg-sidebar p-12 text-slate-300 lg:flex">
+        <div class="flex items-center gap-3">
+            <span class="flex size-10 items-center justify-center rounded-lg bg-brand-600 text-white">
+                <svg class="size-6" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 3 L27 7 V15 C27 22 22 27 16 29 C10 27 5 22 5 15 V7 Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M11 16 L15 20 L21 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="text-lg font-bold tracking-wider text-white">BENTENG</span>
+        </div>
+        <div class="max-w-md">
+            <h1 class="text-3xl leading-tight font-bold text-white">Pertahanan jaringan untuk satuan yang tidak punya tim siber sendiri.</h1>
+            <p class="mt-4 leading-7 text-slate-400">Sensor di tepi jaringan mengenali perangkat yang terinfeksi, lalu analis memutuskan tindakan dari satu dashboard. Semua data tetap di server satuan.</p>
+        </div>
+        <p class="text-xs text-slate-500">Kartika Cyber Hackathon 2026, kategori Penangkalan.</p>
     </div>
 
-    @if ($errors->any())
-      <div class="galat" role="alert">{{ $errors->first() }}</div>
-    @endif
+    <div class="flex flex-1 items-center justify-center px-6 py-12">
+        <div class="w-full max-w-sm">
+            <div class="flex items-center gap-3 lg:hidden">
+                <span class="flex size-9 items-center justify-center rounded-lg bg-brand-600 text-white">
+                    <svg class="size-5" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 3 L27 7 V15 C27 22 22 27 16 29 C10 27 5 22 5 15 V7 Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M11 16 L15 20 L21 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <span class="font-bold tracking-wider text-slate-900">BENTENG</span>
+            </div>
 
-    <form method="POST" action="{{ route('login') }}">
-      @csrf
-      <label>Email
-        <input type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username">
-      </label>
-      <label>Kata sandi
-        <input type="password" name="password" required autocomplete="current-password">
-      </label>
-      <label class="ingat"><input type="checkbox" name="ingat" value="1"> Ingat saya di perangkat ini</label>
-      <button type="submit">Masuk</button>
-    </form>
+            <h2 class="mt-8 text-2xl font-bold text-slate-900 lg:mt-0">Masuk ke dashboard</h2>
+            <p class="mt-2 text-sm text-slate-500">Gunakan akun yang diberikan admin satuan.</p>
 
-    <div class="sub">Akun dibuat oleh admin satuan dengan <span class="mono">php artisan benteng:pengguna</span>. Setiap tindakan tercatat atas nama akun Anda.</div>
-  </main>
+            @if ($errors->any())
+                <div class="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{{ $errors->first() }}</div>
+            @endif
+
+            <form method="POST" action="{{ route('login') }}" class="mt-6 space-y-5">
+                @csrf
+                <div>
+                    <label for="email" class="block text-sm font-medium text-slate-700">Email</label>
+                    <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username"
+                        class="mt-1.5 block w-full rounded-md border-0 px-3 py-2.5 text-slate-900 shadow-xs ring-1 ring-slate-300 ring-inset focus:ring-2 focus:ring-brand-600">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-slate-700">Kata sandi</label>
+                    <input id="password" type="password" name="password" required autocomplete="current-password"
+                        class="mt-1.5 block w-full rounded-md border-0 px-3 py-2.5 text-slate-900 shadow-xs ring-1 ring-slate-300 ring-inset focus:ring-2 focus:ring-brand-600">
+                </div>
+                <label class="flex items-center gap-2 text-sm text-slate-600">
+                    <input type="checkbox" name="ingat" value="1" class="size-4 rounded border-slate-300 accent-brand-600">
+                    Ingat saya di perangkat ini
+                </label>
+                <x-tombol type="submit" varian="utama" class="w-full py-2.5">Masuk</x-tombol>
+            </form>
+
+            <p class="mt-8 text-xs leading-5 text-slate-500">Setiap tindakan di dashboard tercatat atas nama akun Anda. Belum punya akun? Hubungi admin satuan.</p>
+        </div>
+    </div>
+</div>
 </body>
 </html>
