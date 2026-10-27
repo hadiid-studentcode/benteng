@@ -5,7 +5,7 @@
 BASE="http://192.168.56.1:8000"
 SERVER="$BASE/api/ingest/dns"
 SERVER_DHCP="$BASE/api/ingest/dhcp"
-TOKEN="GANTI-DENGAN-TOKEN-ACAK"
+TOKEN="13d6d6692e2fd01038a1b178d62c667d"
 SENSOR="BTG-02"
 
 BUF=/tmp/benteng-dns.buf

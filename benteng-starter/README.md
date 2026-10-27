@@ -1,5 +1,9 @@
 # BENTENG starter: sensor → server (alur data DNS pertama)
 
+> **Dokumen ini arsip langkah awal dan sudah tidak lengkap.** Untuk memasang sensor dari nol
+> (VM OpenWrt, jaringan, skrip agent/responder, halaman karantina, dan uji akhir), ikuti
+> [`benteng-server/docs/PANDUAN-SENSOR.md`](../benteng-server/docs/PANDUAN-SENSOR.md).
+
 Tujuan langkah ini: setiap query DNS dari VM korban tercatat di sensor, dikirim otomatis tiap menit ke server Laravel di Windows, lalu tersimpan di database.
 
 ```

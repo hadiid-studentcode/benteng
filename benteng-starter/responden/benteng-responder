@@ -4,16 +4,20 @@
 # aksi: quarantine | unquarantine. Dijalankan terus-menerus oleh procd.
 
 SERVER="http://192.168.56.1:8000"
-TOKEN="GANTI-DENGAN-TOKEN-ACAK"
+TOKEN="13d6d6692e2fd01038a1b178d62c667d"
 SENSOR="BTG-02"
 JEDA=5
 # Tiap sekian putaran (12 x 5 dtk = 1 menit) set karantina disamakan dengan server.
 SINKRON_TIAP=12
 
-# Pastikan tabel nftables BENTENG ada (idempoten).
+# Pastikan tabel nftables BENTENG ada (idempoten). Halaman karantina dimuat
+# terpisah: kalau gagal, pemutusan koneksi tetap berjalan.
 pastikan_nft() {
 	if ! nft list table inet benteng >/dev/null 2>&1; then
 		nft -f /etc/benteng/benteng-nft.conf
+		if [ -f /etc/benteng/benteng-portal.nft ] && ! nft -f /etc/benteng/benteng-portal.nft 2>/dev/null; then
+			logger -t benteng-responder "halaman karantina tidak aktif (benteng-portal.nft gagal dimuat)"
+		fi
 	fi
 }
 

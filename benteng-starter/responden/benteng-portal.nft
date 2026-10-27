@@ -1,0 +1,13 @@
+# Pengalihan halaman karantina (opsional), dimuat setelah benteng-nft.conf.
+# Akses web (HTTP port 80) dari perangkat karantina dialihkan ke halaman
+# pemberitahuan di sensor (uhttpd port 8081), sehingga pengguna tahu
+# perangkatnya diputus dan harus menghubungi petugas. Prioritas -101 berjalan
+# sebelum NAT fw4 (dstnat, -100). DNS ke sensor tetap jalan, jadi query
+# perangkat karantina masih tercatat untuk analis.
+# Bila file ini gagal dimuat (mis. modul redirect tidak ada), karantina tetap berfungsi.
+table inet benteng {
+	chain prerouting {
+		type nat hook prerouting priority -101; policy accept;
+		ip saddr @karantina_v4 tcp dport 80 redirect to :8081
+	}
+}

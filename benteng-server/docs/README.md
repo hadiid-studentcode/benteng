@@ -189,7 +189,8 @@ benteng/
    │  └─ benteng-agent                      # -> /usr/bin/benteng-agent   (kirim DNS + DHCP, cron 1 menit)
    ├─ responden/
    │  ├─ benteng-responder(.init)           # -> /usr/bin, /etc/init.d   (perintah + sinkron karantina)
-   │  ├─ benteng-nft.conf                   # -> /etc/benteng/benteng-nft.conf
+   │  ├─ benteng-nft.conf                   # -> /etc/benteng/benteng-nft.conf  (set + aturan karantina)
+   │  ├─ benteng-portal.nft                 # -> /etc/benteng/benteng-portal.nft (alihkan HTTP ke halaman karantina)
    │  └─ www-benteng/index.html             # -> /www-benteng/index.html (halaman karantina)
    ├─ uji/benteng-trafik-uji.py             # alat uji di VM korban. BUKAN malware.
    └─ server/                               # arsip langkah 1 (versi awal, tidak dipakai lagi)
@@ -345,63 +346,17 @@ php artisan serve --host=0.0.0.0 --port=8000
 php artisan schedule:work          # detektor otomatis tiap menit
 ```
 
-**Sensor (OpenWrt) — dari PowerShell di folder `benteng-starter`:**
-```powershell
-scp -O sensor\benteng-collect root@192.168.56.20:/usr/bin/benteng-collect
-scp -O sensor\benteng-collect.init root@192.168.56.20:/etc/init.d/benteng-collect
-scp -O sensor\benteng-agent root@192.168.56.20:/usr/bin/benteng-agent
-scp -O responden\benteng-responder root@192.168.56.20:/usr/bin/benteng-responder
-scp -O responden\benteng-responder.init root@192.168.56.20:/etc/init.d/benteng-responder
-ssh root@192.168.56.20 "mkdir -p /etc/benteng /www-benteng"
-scp -O responden\benteng-nft.conf root@192.168.56.20:/etc/benteng/benteng-nft.conf
-scp -O responden\www-benteng\index.html root@192.168.56.20:/www-benteng/index.html
-ssh root@192.168.56.20
-```
+**Sensor (OpenWrt di VirtualBox):** ikuti **[PANDUAN-SENSOR.md](PANDUAN-SENSOR.md)**,
+langkah demi langkah dari membuat VM sampai uji karantina. Ringkasnya:
+1. VM OpenWrt 24.10.8 x86-64 EFI dengan tiga adapter: Internal `benteng-lan`, NAT, Host-only.
+2. Di konsol VM: kata sandi root dan antarmuka `mgmt` 192.168.56.20 di `eth2`.
+3. Lewat SSH: zona waktu WIB, `logqueries` dnsmasq, salin skrip BENTENG, isi token,
+   halaman karantina uhttpd :8081, layanan `benteng-collect` dan `benteng-responder`, cron agent.
 
-Di dalam sesi SSH sensor (ganti `TOKEN-KAMU` dengan nilai `BENTENG_SENSOR_TOKEN`):
-```sh
-# paket & dnsmasq (sekali saja)
-opkg update && opkg install conntrack
-uci set dhcp.@dnsmasq[0].logqueries='1'; uci set dhcp.@dnsmasq[0].filter_aaaa='1'
-uci commit dhcp; /etc/init.d/dnsmasq restart
-
-# skrip: buang CRLF Windows, isi token, beri izin eksekusi
-cd /usr/bin
-sed -i 's/\r$//' benteng-collect benteng-agent benteng-responder /etc/init.d/benteng-* /etc/benteng/benteng-nft.conf
-sed -i 's/GANTI-DENGAN-TOKEN-ACAK/TOKEN-KAMU/' benteng-agent benteng-responder
-chmod +x benteng-collect benteng-agent benteng-responder /etc/init.d/benteng-*
-
-# halaman karantina: instance uhttpd kedua di port 8081
-uci -q delete uhttpd.benteng
-uci set uhttpd.benteng=uhttpd
-uci add_list uhttpd.benteng.listen_http='0.0.0.0:8081'
-uci set uhttpd.benteng.home='/www-benteng'
-uci set uhttpd.benteng.error_page='/index.html'
-uci set uhttpd.benteng.no_dirlists='1'
-uci commit uhttpd; /etc/init.d/uhttpd restart
-
-# layanan
-/etc/init.d/benteng-collect enable;   /etc/init.d/benteng-collect restart
-nft delete table inet benteng 2>/dev/null   # muat ulang tabel; daftar karantina dipulihkan dari server
-/etc/init.d/benteng-responder enable; /etc/init.d/benteng-responder restart
-echo '* * * * * /usr/bin/benteng-agent' > /etc/crontabs/root
-/etc/init.d/cron enable; /etc/init.d/cron restart
-
-# cek
-nft list table inet benteng       # harus ada chain forward + prerouting
-logread -e benteng | tail          # "terkirim ke server: ..."
-```
-
-**Verifikasi halaman karantina:** karantina VM korban dari dashboard, lalu di
-korban jalankan `wget -qO- http://neverssl.com | head -20`. Yang muncul seharusnya
-halaman "Perangkat ini diputus dari jaringan". Situs HTTPS tidak bisa dialihkan
-(koneksinya hanya diputus) — ini wajar tanpa sertifikat palsu.
-
-> Catatan: pengalihan HTTP dan uhttpd :8081 sudah dirancang untuk OpenWrt 24.10
-> tetapi baru diuji dengan `nft`/`wget` tiruan di Windows. Uji di sensor asli
-> dengan langkah verifikasi di atas sebelum merekam video. Pastikan
-> *software flow offloading* fw4 tetap mati (bawaan), karena offloading melewati
-> chain forward sehingga koneksi lama perangkat karantina bisa lolos.
+> Catatan: pengalihan HTTP ke halaman karantina (`benteng-portal.nft`) dimuat terpisah
+> dari aturan karantina, jadi kalau gagal dimuat, pemutusan koneksi tetap berjalan.
+> Pastikan *software flow offloading* fw4 tetap mati (bawaan), karena offloading
+> melewati chain forward sehingga koneksi lama perangkat karantina bisa lolos.
 
 **VM korban (Alpine):**
 ```sh
@@ -411,9 +366,11 @@ python3 /root/benteng-trafik-uji.py --mode normal --menit 60   # uji alarm palsu
 
 **Uji kualitas detektor (tanpa lab):** `php artisan benteng:deteksi --evaluasi --percobaan=100`
 
-**Menyiapkan data bersih untuk rekaman demo:** lepas semua karantina dari
-dashboard dulu, lalu `php artisan migrate:fresh` (menghapus **semua** data
-termasuk akun) dan buat ulang akun dengan `benteng:pengguna`.
+**Menyiapkan data bersih untuk rekaman demo:** `php artisan benteng:reset-demo`.
+Perintah ini menghapus data DNS, insiden, perintah, jejak audit, dan daftar perangkat;
+akun tetap ada, dan perangkat yang masih dikarantina dilepas oleh sensor. Ini juga
+diperlukan bila simulator dijalankan ulang setelah insiden yang sama pernah ditandai
+"Bukan ancaman", karena pola yang sudah ditutup analis tidak dilaporkan ulang.
 
 > ⚠️ **Token sensor** harus sama di `benteng-agent`, `benteng-responder`, dan
 > `.env` (`BENTENG_SENSOR_TOKEN`). File di repo sekarang berisi placeholder
