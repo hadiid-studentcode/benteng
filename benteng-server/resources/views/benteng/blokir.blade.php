@@ -102,7 +102,7 @@
             </x-kartu>
         @endif
 
-        <x-kartu judul="Blokir atau karantina?">
+        <x-kartu judul="Blokir atau karantina?" class="hidden xl:flex">
             <ul class="flex flex-col gap-4 text-sm leading-6">
                 <li class="flex gap-3">
                     <span class="icon-box icon-box--sm icon-box--info shrink-0"><x-ikon nama="larangan" class="size-3.5" /></span>

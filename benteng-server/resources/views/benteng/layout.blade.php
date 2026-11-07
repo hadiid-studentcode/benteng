@@ -22,6 +22,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('judul') - BENTENG</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -112,7 +113,7 @@
                         @endif
                     </div>
                     @hasSection('aksi-halaman')
-                        <div class="page__action">@yield('aksi-halaman')</div>
+                        <div class="page__action w-full md:w-auto">@yield('aksi-halaman')</div>
                     @endif
                 </header>
 
