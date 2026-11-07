@@ -16,7 +16,7 @@ return [
 
     // Keterangan sensor untuk diagram topologi (opsional, per ID sensor).
     'sensor_info' => [
-        'BTG-02' => ['model' => 'OpenWrt 24.10 x86', 'lan' => '192.168.1.1/24', 'lokasi' => 'Lab VirtualBox'],
+        'BTG-02' => ['model' => 'Sensor tepi jaringan', 'lan' => '192.168.1.1/24', 'lokasi' => 'Lab VirtualBox'],
     ],
 
     // Keterangan server pusat untuk diagram topologi.

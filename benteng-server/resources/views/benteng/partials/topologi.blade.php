@@ -66,7 +66,7 @@
                     <path d="M11 16 L15 20 L21 12" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="stroke-brand-600" />
                 </g>
                 <text x="{{ $SX + 50 }}" y="{{ $sy + 28 }}" class="fill-slate-900 text-[14px] font-semibold">Sensor {{ $t['nama'] }}</text>
-                <text x="{{ $SX + 50 }}" y="{{ $sy + 45 }}" class="fill-slate-500 text-[11px]">{{ $t['info']['model'] ?? 'Sensor OpenWrt' }}</text>
+                <text x="{{ $SX + 50 }}" y="{{ $sy + 45 }}" class="fill-slate-500 text-[11px]">{{ $t['info']['model'] ?? 'Sensor tepi jaringan' }}</text>
                 <text x="{{ $SX + 16 }}" y="{{ $sy + 70 }}" class="fill-slate-600 text-[12px]">LAN {{ $t['info']['lan'] ?? '-' }}</text>
                 <circle cx="{{ $SX + 20 }}" cy="{{ $sy + 87 }}" r="4" class="{{ $t['online'] ? 'fill-emerald-500' : 'fill-red-500' }}" />
                 <text x="{{ $SX + 30 }}" y="{{ $sy + 91 }}" class="fill-slate-600 text-[11px]">{{ $t['online'] ? 'Online' : 'Tidak merespons' }}{{ $detikDetak !== null ? ', '.($detikDetak < 60 ? $detikDetak.' dtk' : intdiv($detikDetak, 60).' mnt').' lalu' : '' }}</text>
@@ -79,7 +79,7 @@
                         $dy = $g['devTop'] + $k * ($DH + $DG);
                         $dc = $dy + $DH / 2;
                         $s = $gaya[$p->status];
-                        $nama = $p->hostname ? \Illuminate\Support\Str::limit($p->hostname, 12, '...') : 'tanpa nama';
+                        $nama = $p->hostname ? \Illuminate\Support\Str::limit($p->hostname, 22, '...') : 'tanpa nama';
                     @endphp
                     <path d="M {{ $BX }} {{ $dc }} H {{ $DX }}" fill="none" stroke-width="2" class="{{ $s['cabang'] }}" @if ($s['garis']) stroke-dasharray="{{ $s['garis'] }}" @endif />
                     @if ($p->status === 'dikarantina')
@@ -93,7 +93,7 @@
                         <rect x="{{ $DX }}" y="{{ $dy }}" width="{{ $DW }}" height="{{ $DH }}" rx="8" class="fill-white group-hover:fill-slate-50 {{ $s['kotak'] }}" />
                         <circle cx="{{ $DX + 16 }}" cy="{{ $dc }}" r="5" class="{{ $s['titik'] }}" />
                         <text x="{{ $DX + 30 }}" y="{{ $dy + 21 }}" class="fill-slate-900 text-[13px] font-semibold">{{ $p->ip }}</text>
-                        <text x="{{ $DX + 30 }}" y="{{ $dy + 38 }}" class="fill-slate-500 text-[11px]">{{ $nama }}{{ $p->mac ? ', '.$p->mac : '' }}</text>
+                        <text x="{{ $DX + 30 }}" y="{{ $dy + 38 }}" class="fill-slate-500 text-[11px]">{{ $nama }}</text>
                         <rect x="{{ $DX + $DW - 94 }}" y="{{ $dy + 15 }}" width="84" height="20" rx="6" class="{{ $s['lencana'] }}" />
                         <text x="{{ $DX + $DW - 52 }}" y="{{ $dy + 29 }}" text-anchor="middle" class="{{ $s['teks'] }} text-[11px] font-semibold">{{ $s['label'] }}</text>
                     </g>

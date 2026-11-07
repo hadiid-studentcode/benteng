@@ -22,7 +22,7 @@
                             <span class="flex size-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600"><x-ikon nama="sensor" /></span>
                             <div>
                                 <p class="font-semibold text-slate-900">Sensor {{ $s['nama'] }}</p>
-                                <p class="text-xs text-slate-500">{{ $s['info']['model'] ?? 'Sensor OpenWrt' }}{{ isset($s['info']['lokasi']) ? ', '.$s['info']['lokasi'] : '' }}</p>
+                                <p class="text-xs text-slate-500">{{ $s['info']['model'] ?? 'Sensor tepi jaringan' }}{{ isset($s['info']['lokasi']) ? ', '.$s['info']['lokasi'] : '' }}</p>
                             </div>
                         </div>
                         @if ($s['online'])

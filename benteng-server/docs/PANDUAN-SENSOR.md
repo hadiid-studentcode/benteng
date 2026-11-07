@@ -351,6 +351,15 @@ Tabel harus berisi `set karantina_v4`, `chain forward`, dan `chain prerouting`. 
 `chain prerouting` tidak ada dan log berisi "halaman karantina tidak aktif", karantina
 tetap berfungsi; hanya halaman pemberitahuannya yang tidak muncul (lihat bagian I).
 
+### F5. Banner login BENTENG
+
+**PowerShell** (folder `benteng-starter`):
+
+```powershell
+ssh root@192.168.56.20 "cp /etc/banner /etc/banner.asli"
+scp -O sensor\benteng-banner root@192.168.56.20:/etc/banner
+```
+
 ---
 
 ## G. VM korban
@@ -422,6 +431,7 @@ tetap berfungsi; hanya halaman pemberitahuannya yang tidak muncul (lihat bagian 
 | `ping 192.168.56.20` tidak dibalas | Urutan adapter salah atau langkah B4 belum jalan. Cek `ip -br addr` di konsol VM; `eth2` harus 192.168.56.20. |
 | SSH: `REMOTE HOST IDENTIFICATION HAS CHANGED` | Jalankan `ssh-keygen -R 192.168.56.20` lalu coba lagi. |
 | `scp: ... sftp-server: not found` | Tambahkan opsi `-O` pada `scp`. |
+| Sensor *Tidak merespons*, log sensor `gagal kirim`, tapi dashboard terbuka normal di `127.0.0.1` | IP laptop di adapter host-only bukan lagi 192.168.56.1. Cek dengan `VBoxManage list hostonlyifs`, perbaiki dengan `VBoxManage hostonlyif ipconfig "VirtualBox Host-Only Ethernet Adapter" --ip 192.168.56.1 --netmask 255.255.255.0`. |
 | Sensor *Tidak merespons* di dashboard | Server belum jalan di `0.0.0.0:8000`, firewall Windows memblokir `php.exe`, atau token beda (uji langkah F2). Lihat `logread -e benteng`. |
 | Menu Perangkat kosong | Cron belum jalan (`/etc/init.d/cron restart`) atau korban belum melakukan query. Cek `ls -la /tmp/benteng-dns.*` dan `cat /tmp/dhcp.leases`. |
 | Waktu di dashboard meleset 7 jam | Zona waktu sensor belum WIB (langkah D1). |
