@@ -404,7 +404,8 @@ scp -O sensor\benteng-banner root@192.168.56.20:/etc/banner
    python3 /root/benteng-trafik-uji.py --menit 6
    ```
 
-   Dalam 1–3 menit, insiden beaconing dan DGA muncul sendiri di dashboard.
+   Insiden DGA muncul sendiri dalam 1–3 menit. Insiden beaconing butuh sekitar 5–6 menit,
+   karena detektor perlu melihat minimal 9 jeda yang teratur sebelum yakin.
 
    > Pola yang pernah ditandai **Bukan ancaman** tidak dilaporkan ulang untuk perangkat
    > yang sama. Kalau grafik DNS naik tetapi insiden tidak muncul, kosongkan data lab dulu
@@ -421,6 +422,64 @@ scp -O sensor\benteng-banner root@192.168.56.20:/etc/banner
 6. **Lepas.** Klik **Lepas karantina**. Ping korban berhasil lagi.
 7. **Uji alarm palsu** (opsional, 60 menit): `python3 /root/benteng-trafik-uji.py --mode normal --menit 60`.
    Dashboard seharusnya tidak menampilkan insiden baru.
+
+---
+
+## H2. Simulasi kamera CCTV dan blokir domain
+
+Tidak perlu kamera sungguhan. Sensor hanya melihat MAC, nama host, dan query DNS, jadi VM
+kecil yang meniru jejak itu sudah cukup. Skrip hanya menanyakan nama domain, tidak membuka
+koneksi ke server vendor. Sebutkan bahwa ini simulasi saat demo.
+
+**1. Salin VM korban.** Matikan VM korban dulu (`poweroff` di dalamnya), lalu di **PowerShell**:
+
+```powershell
+$VBox = "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
+& $VBox clonevm benteng-korban --name benteng-cctv --register
+& $VBox modifyvm benteng-cctv --memory 192 --nic1 intnet --intnet1 benteng-lan --macaddress1 4419B6C0A801
+& $VBox startvm benteng-korban
+& $VBox startvm benteng-cctv
+```
+
+`44:19:B6` adalah prefix MAC resmi Hikvision.
+
+**2. Ubah nama host.** Di **konsol VM `benteng-cctv`**:
+
+```sh
+echo DS-2CD2043G2-I > /etc/hostname
+hostname -F /etc/hostname
+sed -i 's/benteng-korban/DS-2CD2043G2-I/g' /etc/hosts /etc/network/interfaces
+rc-service networking restart
+ip addr show eth0 | grep 'inet '
+```
+
+**3. Pasang simulator.** Salin lewat web server sensor (**PowerShell**, folder `benteng-starter`):
+
+```powershell
+scp -O uji\benteng-iot-sim.py root@192.168.56.20:/www/
+```
+
+Di **konsol VM `benteng-cctv`**:
+
+```sh
+wget -O /root/benteng-iot-sim.py http://192.168.1.1/benteng-iot-sim.py
+printf '#!/bin/sh\npython3 /root/benteng-iot-sim.py --profil cctv-hikvision > /var/log/benteng-iot.log 2>&1 &\n' > /etc/local.d/benteng-iot.start
+chmod +x /etc/local.d/benteng-iot.start
+rc-update add local default
+rc-service local restart
+```
+
+Hapus salinannya dari sensor: `ssh root@192.168.56.20 "rm /www/benteng-iot-sim.py"`.
+
+**4. Yang seharusnya terlihat di dashboard:**
+
+1. Dalam sekitar 1 menit, muncul perangkat `DS-2CD2043G2-I` berstatus *Belum dikenal* dan insiden perangkat asing. Klik **Daftarkan sah**.
+2. Dalam sekitar 5–6 menit, muncul insiden **Beaconing ke litedev.hik-connect.com**.
+3. Buka detail insiden, klik **Blokir domain** → **Ya, blokir domain**.
+4. Dalam beberapa detik, status insiden menjadi *Domain diblokir* dan perangkat tetap *Normal*. Di menu **Domain diblokir**, statusnya *Aktif*.
+5. Bukti di **konsol VM `benteng-cctv`**: `nslookup litedev.hik-connect.com` menjawab `NXDOMAIN`.
+
+Kalau VM korban ikut menanyakan domain yang sama (`nslookup litedev.hik-connect.com` di VM korban), dalam 1–2 menit muncul insiden baru: perangkat lain mencoba menghubungi domain terblokir.
 
 ---
 

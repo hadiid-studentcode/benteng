@@ -2,27 +2,35 @@
 @extends('benteng.layout')
 
 @section('judul', 'Perangkat')
-@section('remah', 'Perangkat')
+@section('keterangan', 'Semua perangkat yang terlihat oleh sensor, dari log DNS dan daftar DHCP.')
+@section('remah')
+    <li class="breadcrumb__item" aria-current="page">Perangkat</li>
+@endsection
+
+@section('aksi-halaman')
+    <div class="input-group w-full md:w-72">
+        <span class="input-group__text"><x-ikon nama="cari" class="size-4" /></span>
+        <input type="search" class="input" data-cari-tabel="#tabel-perangkat" placeholder="Cari IP, nama host, atau MAC" aria-label="Cari perangkat">
+    </div>
+@endsection
 
 @section('konten')
-<div class="space-y-4">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p class="text-sm text-slate-600">Semua perangkat yang terlihat oleh sensor, dari log DNS dan daftar DHCP.</p>
-        <label class="relative block sm:w-72">
-            <span class="sr-only">Cari perangkat</span>
-            <x-ikon nama="cari" class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
-            <input type="search" data-cari-tabel="#tabel-perangkat" placeholder="Cari IP, nama host, atau MAC"
-                class="w-full rounded-md border-0 bg-white py-2 pr-3 pl-9 text-sm text-slate-800 shadow-xs ring-1 ring-slate-300 ring-inset placeholder:text-slate-400 focus:ring-2 focus:ring-brand-600">
-        </label>
-    </div>
-
+<div class="flex flex-col gap-4">
     <div id="isi" data-segar>
     @fragment('isi')
         @include('benteng.partials.segar')
         @php
             $relatif = fn ($t) => $t ? Carbon::parse($t)->locale('id')->diffForHumans() : '-';
+            $warnaPerangkat = ['normal' => 'icon-box--success', 'insiden' => 'icon-box--danger', 'dikarantina' => 'icon-box--info', 'asing' => 'icon-box--warning'];
         @endphp
-        <div class="space-y-4">
+        <div class="flex flex-col gap-4">
+            <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
+                <x-ringkasan label="Normal" :nilai="$perStatus['normal'] ?? 0" ikon="centang-bulat" warna="icon-box--success" />
+                <x-ringkasan label="Ada insiden" :nilai="$perStatus['insiden'] ?? 0" ikon="insiden" warna="icon-box--danger" />
+                <x-ringkasan label="Dikarantina" :nilai="$perStatus['dikarantina'] ?? 0" ikon="kunci" warna="icon-box--info" />
+                <x-ringkasan label="Belum dikenal" :nilai="$perStatus['asing'] ?? 0" ikon="info" warna="icon-box--warning" />
+            </div>
+
             <x-tab-filter :aktif="$filter" :pilihan="[
                 ['semua', 'Semua', $jumlah['semua'], route('benteng.perangkat')],
                 ['bermasalah', 'Bermasalah', $jumlah['bermasalah'], route('benteng.perangkat', ['status' => 'bermasalah'])],
@@ -31,49 +39,55 @@
 
             <x-kartu rapat>
                 @if ($perangkat->isEmpty())
-                    <div class="px-6 py-12 text-center text-sm text-slate-500">
-                        {{ $filter === 'semua' ? 'Belum ada perangkat. Pastikan sensor mengirim data ke server.' : 'Tidak ada perangkat pada kategori ini.' }}
+                    <div class="empty-state">
+                        <span class="empty-state__media"><x-ikon nama="perangkat" /></span>
+                        <p class="empty-state__text">{{ $filter === 'semua' ? 'Belum ada perangkat. Pastikan sensor mengirim data ke server.' : 'Tidak ada perangkat pada kategori ini.' }}</p>
                     </div>
                 @else
-                    <div class="overflow-x-auto">
-                        <table id="tabel-perangkat" class="min-w-full text-sm">
-                            <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-500">
+                    <div class="table-responsive">
+                        <table id="tabel-perangkat" class="table table--hover table--align-middle">
+                            <thead class="table__head--alt">
                                 <tr>
-                                    <th scope="col" class="px-5 py-3">Perangkat</th>
-                                    <th scope="col" class="px-3 py-3">MAC</th>
-                                    <th scope="col" class="px-3 py-3">Sensor</th>
-                                    <th scope="col" class="px-3 py-3 text-right">Query DNS</th>
-                                    <th scope="col" class="px-3 py-3">Terakhir terlihat</th>
-                                    <th scope="col" class="px-3 py-3">Status</th>
-                                    <th scope="col" class="px-5 py-3 text-right"><span class="sr-only">Tindakan</span></th>
+                                    <th scope="col">Perangkat</th>
+                                    <th scope="col">MAC</th>
+                                    <th scope="col">Sensor</th>
+                                    <th scope="col" class="text-end">Query DNS</th>
+                                    <th scope="col">Terakhir terlihat</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col"><span class="sr-only">Tindakan</span></th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-100">
+                            <tbody>
                                 @foreach ($perangkat as $p)
                                     @php $idInsiden = $insidenPerPerangkat->get($p->sensor.'|'.$p->ip); @endphp
                                     <tr data-cari="{{ strtolower($p->ip.' '.$p->hostname.' '.$p->mac) }}">
-                                        <td class="px-5 py-3.5 whitespace-nowrap">
-                                            <p class="font-semibold text-slate-900">{{ $p->ip }}</p>
-                                            <p class="text-xs text-slate-500">{{ $p->hostname ?: 'Tanpa nama host' }}</p>
+                                        <td class="whitespace-nowrap">
+                                            <div class="flex items-center gap-3">
+                                                <span class="icon-box icon-box--sm {{ $warnaPerangkat[$p->status] ?? 'icon-box--primary' }}"><x-ikon nama="perangkat" class="size-3.5" /></span>
+                                                <div>
+                                                    <p class="font-semibold">{{ $p->ip }}</p>
+                                                    <p class="text-xs text-muted-foreground">{{ $p->hostname ?: 'Tanpa nama host' }}</p>
+                                                </div>
+                                            </div>
                                         </td>
-                                        <td class="px-3 py-3.5 font-mono text-xs whitespace-nowrap text-slate-600">{{ $p->mac ?? '-' }}</td>
-                                        <td class="px-3 py-3.5 whitespace-nowrap text-slate-600">{{ $p->sensor }}</td>
-                                        <td class="px-3 py-3.5 text-right whitespace-nowrap text-slate-700 tabular-nums">
+                                        <td class="font-mono text-xs whitespace-nowrap">{{ $p->mac ?? '-' }}</td>
+                                        <td class="whitespace-nowrap">{{ $p->sensor }}</td>
+                                        <td class="text-end whitespace-nowrap tabular-nums">
                                             {{ number_format($p->jumlah, 0, ',', '.') }}
-                                            <p class="text-xs text-slate-400">{{ number_format($p->domain_unik, 0, ',', '.') }} domain</p>
+                                            <p class="text-xs text-muted-foreground">{{ number_format($p->domain_unik, 0, ',', '.') }} domain</p>
                                         </td>
-                                        <td class="px-3 py-3.5 whitespace-nowrap text-slate-600">{{ $relatif($p->akhir) }}</td>
-                                        <td class="px-3 py-3.5"><x-status-perangkat :status="$p->status" /></td>
-                                        <td class="px-5 py-3.5 text-right whitespace-nowrap">
+                                        <td class="whitespace-nowrap">{{ $relatif($p->akhir) }}</td>
+                                        <td><x-status-perangkat :status="$p->status" /></td>
+                                        <td class="text-end whitespace-nowrap">
                                             @if ($idInsiden)
-                                                <x-tombol ukuran="kecil" :href="route('benteng.insiden.detail', $idInsiden)">Lihat insiden</x-tombol>
+                                                <x-tombol ukuran="kecil" :href="route('benteng.insiden.detail', $idInsiden)">Lihat insiden<x-ikon nama="panah-kanan" class="size-4" /></x-tombol>
                                             @endif
                                         </td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </table>
-                        <p hidden class="px-5 py-8 text-center text-sm text-slate-500" data-cari-kosong>Tidak ada perangkat yang cocok dengan pencarian.</p>
+                        <p hidden class="py-8 text-center text-sm text-muted-foreground" data-cari-kosong>Tidak ada perangkat yang cocok dengan pencarian.</p>
                     </div>
                 @endif
             </x-kartu>

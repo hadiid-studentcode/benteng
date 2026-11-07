@@ -12,7 +12,7 @@
 @endphp
 @if (! $bisaBertindak)
     @unless ($ringkas)
-        <p class="text-sm text-slate-500">Akun pengamat hanya dapat melihat. Tindakan dilakukan oleh analis.</p>
+        <p class="text-sm text-muted-foreground">Akun pengamat hanya dapat melihat. Tindakan dilakukan oleh analis.</p>
     @endunless
 @elseif ($i->status === 'baru')
     <div class="flex items-center gap-2 {{ $ringkas ? 'flex-nowrap' : 'flex-wrap' }}" data-aksi>

@@ -33,6 +33,7 @@ class PerangkatController extends Controller
                 'bermasalah' => $semua->filter($bermasalah)->count(),
                 'asing' => $semua->where('status', 'asing')->count(),
             ],
+            'perStatus' => $semua->countBy('status'),
             'perangkat' => match ($filter) {
                 'bermasalah' => $semua->filter($bermasalah)->values(),
                 'asing' => $semua->where('status', 'asing')->values(),

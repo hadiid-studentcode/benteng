@@ -77,6 +77,53 @@ class CommandController extends Controller
     }
 
     /**
+     * Daftar domain yang harus diblokir sensor. Baris pertama adalah penanda
+     * "#benteng <id terbesar> <jumlah belum diterapkan>", supaya sensor bisa membedakan
+     * daftar kosong dengan server yang gagal membalas. Baris berikutnya: "<id> <domain>".
+     */
+    public function blokir(Request $request, string $sensor)
+    {
+        $this->cekToken($request);
+
+        $daftar = DB::table('domain_diblokir')->where('sensor', $sensor)->orderBy('id')->get();
+        $belum = $daftar->whereNull('diterapkan_pada')->count();
+
+        $baris = $daftar->map(fn ($b) => "{$b->id} {$b->domain}")
+            ->prepend('#benteng '.(int) $daftar->max('id')." $belum")
+            ->implode("\n");
+
+        return response($baris."\n", 200)->header('Content-Type', 'text/plain');
+    }
+
+    /**
+     * Sensor melaporkan daftar blokir sudah diterapkan sampai id tertentu.
+     */
+    public function ackBlokir(Request $request, string $sensor)
+    {
+        $this->cekToken($request);
+
+        $baru = DB::table('domain_diblokir')
+            ->where('sensor', $sensor)
+            ->where('id', '<=', (int) $request->input('sampai'))
+            ->whereNull('diterapkan_pada')
+            ->get();
+
+        foreach ($baru as $b) {
+            DB::table('domain_diblokir')->where('id', $b->id)->update(['diterapkan_pada' => now(), 'updated_at' => now()]);
+
+            DB::table('audit_logs')->insert([
+                'pelaku' => "sensor:$sensor",
+                'aksi' => 'blokir ok',
+                'target' => mb_substr($b->domain, 0, 64),
+                'incident_id' => $b->incident_id,
+                'created_at' => now(),
+            ]);
+        }
+
+        return response()->json(['status' => 'ok']);
+    }
+
+    /**
      * Sensor melaporkan hasil sebuah perintah (hasil=ok|gagal).
      */
     public function ack(Request $request, string $sensor, int $id)

@@ -27,6 +27,11 @@ class AuditController extends Controller
 
         return $this->tampilkan($request, 'benteng.audit', [
             'filter' => $filter,
+            'ringkasan' => [
+                'semua' => DB::table('audit_logs')->count(),
+                'sensor' => DB::table('audit_logs')->where('pelaku', 'like', 'sensor:%')->count(),
+                'gagal' => DB::table('audit_logs')->where('aksi', 'like', '% gagal')->count(),
+            ],
             'audit' => $query->paginate(25)->withQueryString(),
         ]);
     }

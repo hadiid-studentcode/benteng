@@ -1,55 +1,41 @@
-// Perilaku halaman dashboard BENTENG: sidebar, modal konfirmasi, notifikasi,
+// Perilaku halaman dashboard BENTENG: komponen Stisla, modal konfirmasi, notifikasi,
 // penyegaran otomatis, tooltip grafik/topologi, dan pencarian tabel.
+import { Stisla } from '@stisla/vanilla';
+import './app-shell.js';
 
 const modal = document.getElementById('modal-konfirmasi');
 const isi = document.querySelector('#isi[data-segar]');
 const JUDUL = document.title;
 const JEDA_SEGAR_MS = 5000;
 
-// --- Sidebar di layar kecil & menu akun ---------------------------------------
+// --- Notifikasi setelah tindakan ------------------------------------------------
 
-function aturSidebar(buka) {
-    document.getElementById('sidebar')?.classList.toggle('-translate-x-full', !buka);
-    document.getElementById('lapisan-sidebar')?.classList.toggle('hidden', !buka);
+// Ikon bawaan toast Stisla butuh pustaka Lucide; di sini cukup dua ikon statis.
+const IKON_TOAST = {
+    success: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+    danger: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+};
+
+function ikonToast(varian) {
+    const wadah = document.createElement('template');
+    wadah.innerHTML = `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IKON_TOAST[varian]}</svg>`;
+    return wadah.content.firstElementChild;
 }
 
-function tutupMenuAkun(kecuali = null) {
-    document.querySelectorAll('details[data-menu-akun][open]').forEach((menu) => {
-        if (!kecuali || !menu.contains(kecuali)) {
-            menu.removeAttribute('open');
-        }
+document.querySelectorAll('[data-flash]').forEach((flash) => {
+    Stisla.toast({
+        icon: ikonToast(flash.dataset.varian),
+        title: flash.dataset.judul,
+        description: flash.dataset.pesan,
+        variant: flash.dataset.varian,
+        delay: 6000,
     });
-}
-
-document.addEventListener('click', (e) => {
-    if (e.target.closest('[data-buka-sidebar]')) {
-        aturSidebar(true);
-    }
-    if (e.target.closest('[data-tutup-sidebar]')) {
-        aturSidebar(false);
-    }
-    tutupMenuAkun(e.target);
-
-    const tutupToast = e.target.closest('[data-tutup-toast]');
-    if (tutupToast) {
-        tutupToast.closest('[data-toast]')?.remove();
-    }
 });
-
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        aturSidebar(false);
-        tutupMenuAkun();
-    }
-});
-
-// --- Notifikasi (toast) hilang sendiri setelah beberapa detik -----------------
-
-document.querySelectorAll('[data-toast]').forEach((toast) => setTimeout(() => toast.remove(), 6000));
 
 // --- Modal konfirmasi untuk form bertanda data-konfirmasi ----------------------
 
 let formMenunggu = null;
+const modalTerbuka = () => modal?.dataset.state === 'open';
 
 function bukaModal(form) {
     formMenunggu = form;
@@ -69,10 +55,10 @@ function bukaModal(form) {
     daftar.replaceChildren(
         ...rincian.flatMap(([label, nilai]) => {
             const dt = document.createElement('dt');
-            dt.className = 'text-slate-500';
+            dt.className = 'text-muted-foreground';
             dt.textContent = label;
             const dd = document.createElement('dd');
-            dd.className = 'font-medium break-words text-slate-800';
+            dd.className = 'font-medium break-words';
             dd.textContent = nilai;
             return [dt, dd];
         }),
@@ -88,8 +74,7 @@ function bukaModal(form) {
         tombol.textContent = form.dataset.tombol || 'Ya, lanjutkan';
     });
 
-    modal.showModal();
-    modal.querySelector('[data-modal-batal]').focus();
+    document.getElementById('pembuka-modal').click();
 }
 
 document.addEventListener('submit', (e) => {
@@ -110,12 +95,6 @@ document.addEventListener('submit', (e) => {
 });
 
 modal?.addEventListener('click', (e) => {
-    // Klik di luar kotak modal (area gelap) sama dengan Batal.
-    if (e.target === modal || e.target.closest('[data-modal-batal]')) {
-        modal.close();
-        return;
-    }
-
     const ya = e.target.closest('[data-modal-ya]');
     if (ya && formMenunggu) {
         ya.disabled = true;
@@ -123,10 +102,6 @@ modal?.addEventListener('click', (e) => {
         formMenunggu.dataset.terkonfirmasi = '1';
         formMenunggu.requestSubmit();
     }
-});
-
-modal?.addEventListener('close', () => {
-    formMenunggu = null;
 });
 
 // --- Penyegaran otomatis isi halaman -----------------------------------------
@@ -156,8 +131,8 @@ function terapkanInfoSegar() {
 
 function tandaiKoneksi(tersambung) {
     const titik = document.querySelector('[data-titik-segar]');
-    titik?.classList.toggle('bg-emerald-500', tersambung);
-    titik?.classList.toggle('bg-red-500', !tersambung);
+    titik?.classList.toggle('indicator--success', tersambung);
+    titik?.classList.toggle('indicator--danger', !tersambung);
     if (!tersambung) {
         const teks = document.querySelector('[data-teks-segar]');
         if (teks) {
@@ -169,7 +144,7 @@ function tandaiKoneksi(tersambung) {
 let sedangMemuat = false;
 
 async function segarkan() {
-    if (!isi || sedangMemuat || document.hidden || modal?.open) {
+    if (!isi || sedangMemuat || document.hidden || modalTerbuka()) {
         return;
     }
     // Jangan ganti isi saat analis sedang mengarahkan kursor atau fokus ke tombol tindakan.
@@ -228,17 +203,15 @@ document.addEventListener('pointermove', (e) => {
     }
     const sasaran = e.target.closest?.('[data-nilai]');
     if (!sasaran) {
-        tip.classList.add('hidden');
+        tip.hidden = true;
         return;
     }
     tip.querySelector('[data-tip-nilai]').textContent = sasaran.dataset.nilai;
     tip.querySelector('[data-tip-label]').textContent = sasaran.dataset.label;
-    tip.classList.remove('hidden');
+    tip.hidden = false;
     tip.style.left = `${Math.min(e.clientX + 12, window.innerWidth - tip.offsetWidth - 8)}px`;
     tip.style.top = `${e.clientY - tip.offsetHeight - 12}px`;
 });
-
-document.addEventListener('pointerleave', () => tip?.classList.add('hidden'));
 
 // --- Pencarian di tabel (mis. halaman Perangkat) -------------------------------
 

@@ -24,6 +24,7 @@ class InsidenController extends Controller
         'semua' => null,
         'aktif' => 'baru',
         'dikarantina' => 'dikarantina',
+        'diblokir' => 'diblokir',
         'ditutup' => 'false_positive',
     ];
 
@@ -48,6 +49,7 @@ class InsidenController extends Controller
                 'semua' => (int) $perStatus->sum(),
                 'aktif' => (int) ($perStatus['baru'] ?? 0),
                 'dikarantina' => (int) ($perStatus['dikarantina'] ?? 0),
+                'diblokir' => (int) ($perStatus['diblokir'] ?? 0),
                 'ditutup' => (int) ($perStatus['false_positive'] ?? 0),
             ],
             'incidents' => $this->lengkapiInsiden($query->get(), $this->daftarPerangkat()),
@@ -62,13 +64,13 @@ class InsidenController extends Controller
 
         $this->lengkapiInsiden(collect([$insiden]), $this->daftarPerangkat());
 
-        // Sidik beacon berbentuk "beacon|sensor|client|domain".
-        $domain = $insiden->jenis === 'beaconing' ? (explode('|', $insiden->sidik, 4)[3] ?? null) : null;
+        $domain = $this->domainBeacon($insiden);
         $sekarang = Carbon::now();
 
         return $this->tampilkan($request, 'benteng.insiden.show', [
             'insiden' => $insiden,
             'domain' => $domain,
+            'blokir' => $domain ? DB::table('domain_diblokir')->where('sensor', $insiden->sensor)->where('domain', $domain)->first() : null,
             'ketukan' => $domain ? $this->ketukanBeacon($insiden, $domain) : [],
             'playbook' => config('benteng.playbook.'.$insiden->jenis),
             // Kode teknik mengandung titik (T1071.004), jadi jangan pakai notasi titik config().
@@ -198,10 +200,13 @@ class InsidenController extends Controller
             'unquarantine gagal' => ['Karantina gagal dilepas', 'merah'],
             'tandai false positive' => ['Ditandai bukan ancaman', 'abu'],
             'daftarkan perangkat' => ['Didaftarkan sebagai perangkat sah', 'hijau'],
+            'blokir domain' => ['Pemblokiran domain diminta', 'biru'],
+            'blokir ok' => ['Domain diblokir di sensor', 'biru'],
+            'lepas blokir domain' => ['Blokir domain dilepas', 'hijau'],
         ];
 
         $audit = DB::table('audit_logs')
-            ->where('target', $insiden->client_ip)
+            ->where(fn ($q) => $q->where('target', $insiden->client_ip)->orWhere('incident_id', $insiden->id))
             ->where('created_at', '>=', $insiden->created_at)
             ->orderBy('id')
             ->get();

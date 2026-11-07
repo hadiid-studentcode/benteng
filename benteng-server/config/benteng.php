@@ -27,6 +27,7 @@ return [
         'beaconing' => 'Beaconing',
         'dga' => 'Domain acak (DGA)',
         'perangkat_asing' => 'Perangkat asing',
+        'domain_terblokir' => 'Domain terblokir',
     ],
 
     // Nama teknik MITRE ATT&CK yang dipakai detektor.
@@ -48,6 +49,7 @@ return [
                 .'sebagai batu loncatan ke perangkat lain di jaringan satuan.',
             'langkah' => [
                 'Karantina perangkat agar terputus dari jaringan.',
+                'Bila perangkat harus tetap bekerja (mis. kamera CCTV), klik "Blokir domain" agar perangkat apa pun di jaringan tidak bisa menghubungi server itu.',
                 'Catat pemilik/pengguna perangkat dan sejak kapan perangkat dipakai.',
                 'Jangan instal ulang dulu: serahkan ke petugas siber satuan atas untuk diperiksa, bukti bisa hilang.',
                 'Periksa apakah perangkat lain menghubungi domain yang sama.',
@@ -64,6 +66,17 @@ return [
                 'Catat pemilik/pengguna perangkat dan aplikasi yang baru dipasang.',
                 'Jangan instal ulang dulu: serahkan ke petugas siber satuan atas untuk diperiksa, bukti bisa hilang.',
                 'Bila perangkat menjalankan aplikasi sah yang memang memakai nama acak (mis. CDN), klik "Bukan ancaman".',
+            ],
+        ],
+        'domain_terblokir' => [
+            'arti' => 'Perangkat ini masih mencoba menghubungi domain yang sudah diblokir analis. '
+                .'Sensor menolak permintaannya, jadi koneksinya gagal, tetapi percobaan itu menandakan ada program di perangkat yang masih berjalan.',
+            'risiko' => 'Perangkat kemungkinan terinfeksi malware yang sama dengan perangkat pertama, '
+                .'atau menjalankan aplikasi yang sama yang melapor ke domain tersebut.',
+            'langkah' => [
+                'Karantina perangkat bila pemiliknya tidak bisa memastikan aplikasi apa yang menghubungi domain itu.',
+                'Periksa apakah perangkat ini punya aplikasi atau riwayat yang sama dengan perangkat pertama.',
+                'Bila ternyata wajar (mis. perangkat yang sama jenisnya dan sudah diperiksa), klik "Bukan ancaman".',
             ],
         ],
         'perangkat_asing' => [

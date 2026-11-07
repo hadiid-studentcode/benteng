@@ -230,6 +230,25 @@ trait MembacaDataPantauan
     }
 
     /**
+     * Domain tujuan beacon. Sidik beacon berbentuk "beacon|sensor|client|domain".
+     */
+    protected function domainBeacon(object $insiden): ?string
+    {
+        return $insiden->jenis === 'beaconing' ? (explode('|', $insiden->sidik, 4)[3] ?? null) : null;
+    }
+
+    /**
+     * Query ke domain (termasuk subdomainnya) sejak waktu tertentu, mis. sejak domain diblokir.
+     */
+    protected function queryKeDomain(string $sensor, string $domain, string $sejak): Builder
+    {
+        return DB::table('dns_events')
+            ->where('sensor', $sensor)
+            ->where('queried_at', '>=', $sejak)
+            ->where(fn ($q) => $q->where('domain', $domain)->orWhere('domain', 'like', "%.$domain"));
+    }
+
+    /**
      * Waktu query (unix detik) ke domain beacon, untuk digambar sebagai bukti keteraturan.
      *
      * @return array<int, int>

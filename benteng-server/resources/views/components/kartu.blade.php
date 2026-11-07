@@ -1,15 +1,21 @@
 @props(['judul' => null, 'keterangan' => null, 'rapat' => false])
-<section {{ $attributes->merge(['class' => 'min-w-0 rounded-xl border border-slate-200 bg-white shadow-xs']) }}>
+<section {{ $attributes->merge(['class' => 'card min-w-0']) }}>
     @if ($judul || isset($aksi))
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-            <div class="min-w-0">
-                <h2 class="text-sm font-semibold text-slate-900">{{ $judul }}</h2>
+        <div class="card__header flex-wrap">
+            <div class="flex min-w-0 flex-col gap-0.5">
+                <h2 class="card__title">{{ $judul }}</h2>
                 @if ($keterangan)
-                    <p class="mt-0.5 text-xs text-slate-500">{{ $keterangan }}</p>
+                    <p class="card__subtitle">{{ $keterangan }}</p>
                 @endif
             </div>
-            {{ $aksi ?? '' }}
+            @isset($aksi)
+                <div class="card__action">{{ $aksi }}</div>
+            @endisset
         </div>
     @endif
-    <div class="{{ $rapat ? '' : 'p-5' }}">{{ $slot }}</div>
+    @if ($rapat)
+        {{ $slot }}
+    @else
+        <div class="card__body">{{ $slot }}</div>
+    @endif
 </section>

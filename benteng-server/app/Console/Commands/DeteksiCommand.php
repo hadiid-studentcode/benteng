@@ -98,7 +98,7 @@ class DeteksiCommand extends Command
             ->lazyById(5000);
 
         $baru = 0;
-        foreach ([...$this->temukan($rows), ...$this->perangkatAsing()] as $temuan) {
+        foreach ([...$this->temukan($rows), ...$this->perangkatAsing(), ...$this->pencobaDomainTerblokir()] as $temuan) {
             $baru += $this->simpan($temuan);
         }
 
@@ -174,6 +174,49 @@ class DeteksiCommand extends Command
                 'mulai_pada' => date('Y-m-d H:i:s', min($domains)),
                 'sidik' => "dga|$sensor|$client",
             ];
+        }
+
+        return $temuan;
+    }
+
+    /**
+     * Perangkat lain yang masih mencoba menghubungi domain terblokir: kemungkinan ikut terinfeksi.
+     * Perangkat asal insiden tidak dilaporkan lagi karena sudah diketahui.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function pencobaDomainTerblokir(): array
+    {
+        $temuan = [];
+
+        foreach (DB::table('domain_diblokir')->get() as $b) {
+            $asal = $b->incident_id ? DB::table('incidents')->where('id', $b->incident_id)->value('client_ip') : null;
+
+            $pencoba = DB::table('dns_events')
+                ->selectRaw('client_ip, COUNT(*) as jumlah, MIN(queried_at) as awal')
+                ->where('sensor', $b->sensor)
+                ->where('queried_at', '>=', $b->created_at)
+                ->where(fn ($q) => $q->where('domain', $b->domain)->orWhere('domain', 'like', "%.{$b->domain}"))
+                ->when($asal, fn ($q) => $q->where('client_ip', '!=', $asal))
+                ->groupBy('client_ip')
+                ->get();
+
+            foreach ($pencoba as $p) {
+                // 127.0.0.1 / ::1 adalah sensor itu sendiri, bukan perangkat jaringan.
+                if (! filter_var($p->client_ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_RES_RANGE)) {
+                    continue;
+                }
+
+                $temuan[] = [
+                    'sensor' => $b->sensor, 'client_ip' => $p->client_ip, 'jenis' => 'domain_terblokir',
+                    'tingkat' => 'tinggi', 'skor' => 80,
+                    'judul' => "Perangkat {$p->client_ip} mencoba menghubungi domain terblokir {$b->domain}",
+                    'attck' => 'T1071.004',
+                    'bukti' => "{$p->jumlah} query ke {$b->domain} setelah domain diblokir. Sensor menolak semua query itu.",
+                    'mulai_pada' => $p->awal,
+                    'sidik' => "terblokir|{$b->sensor}|{$p->client_ip}|{$b->domain}",
+                ];
+            }
         }
 
         return $temuan;

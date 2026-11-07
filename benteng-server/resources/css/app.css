@@ -1,22 +1,23 @@
 @import 'tailwindcss';
-
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
+@import '@stisla/style/theme.css';
 
 @theme {
-    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
-
-    /* Hijau satuan: warna utama tombol, tautan, dan menu aktif. */
-    --color-brand-50: #eef6f1;
-    --color-brand-100: #d6eadf;
-    --color-brand-200: #afd5bf;
-    --color-brand-500: #3a8a62;
-    --color-brand-600: #2f7d57;
-    --color-brand-700: #276a4a;
-    --color-brand-800: #1f5139;
-    --color-sidebar: #15201a;
+    --color-background: oklch(0.9272 0.0116 257.69);
 }
+
+@import '@stisla/style/components.css';
+
+/* Tata letak dari template Meridian milik Stisla (lisensi MIT). */
+@import './meridian/utilities.css';
+@import './meridian/content.css';
+@import './meridian/shell.css';
+@import './meridian/sidebar.css';
+@import './meridian/page.css';
+@import './meridian/stat.css';
+@import './meridian/auth.css';
+
+@source '../views/**/*.blade.php';
+@source '../js/**/*.js';
 
 /* Garis server-sensor di diagram topologi bergerak saat sensor online. */
 @keyframes alir {
@@ -33,7 +34,7 @@
 /* Sorotan singkat untuk baris insiden yang baru muncul setelah penyegaran. */
 @keyframes muncul {
     from {
-        background-color: var(--color-red-100);
+        background-color: --alpha(var(--color-danger) / 18%);
     }
 }
 

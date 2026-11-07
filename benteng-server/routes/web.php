@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\BlokirController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InsidenController;
 use App\Http\Controllers\PerangkatController;
@@ -24,11 +25,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/insiden/{id}', [InsidenController::class, 'show'])->whereNumber('id')->name('benteng.insiden.detail');
     Route::get('/perangkat', [PerangkatController::class, 'index'])->name('benteng.perangkat');
     Route::get('/audit', [AuditController::class, 'index'])->name('benteng.audit');
+    Route::get('/blokir', [BlokirController::class, 'index'])->name('benteng.blokir');
 
     // Tindakan yang mengubah keadaan hanya untuk peran analis.
     Route::middleware('can:bertindak')->group(function () {
         Route::post('/insiden/{id}/karantina', [InsidenController::class, 'karantina'])->whereNumber('id')->name('benteng.karantina');
         Route::post('/insiden/{id}/false-positive', [InsidenController::class, 'falsePositive'])->whereNumber('id')->name('benteng.false-positive');
         Route::post('/insiden/{id}/lepas', [InsidenController::class, 'lepas'])->whereNumber('id')->name('benteng.lepas');
+        Route::post('/insiden/{id}/blokir-domain', [BlokirController::class, 'dariInsiden'])->whereNumber('id')->name('benteng.blokir.insiden');
+        Route::post('/blokir', [BlokirController::class, 'store'])->name('benteng.blokir.tambah');
+        Route::post('/blokir/{id}/lepas', [BlokirController::class, 'lepas'])->whereNumber('id')->name('benteng.blokir.lepas');
     });
 });

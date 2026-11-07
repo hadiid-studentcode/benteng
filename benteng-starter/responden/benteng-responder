@@ -4,7 +4,7 @@
 # aksi: quarantine | unquarantine. Dijalankan terus-menerus oleh procd.
 
 SERVER="http://192.168.56.1:8000"
-TOKEN="13d6d6692e2fd01038a1b178d62c667d"
+TOKEN="GANTI-DENGAN-TOKEN-ACAK"
 SENSOR="BTG-02"
 JEDA=5
 # Tiap sekian putaran (12 x 5 dtk = 1 menit) set karantina disamakan dengan server.
@@ -36,6 +36,45 @@ sinkron_karantina() {
 			nft add element inet benteng karantina_v4 "{ $ip }" 2>/dev/null
 		fi
 	done
+}
+
+# Samakan daftar domain terblokir dengan server lewat file konfigurasi dnsmasq.
+# Baris pertama balasan adalah penanda "#benteng <id terbesar> <belum diterapkan>";
+# tanpa penanda (server mati atau galat), daftar yang sedang berlaku dipertahankan.
+sinkron_blokir() {
+	DATA=$(wget -q -O - --header="X-Sensor-Token: $TOKEN" "$SERVER/api/sensors/$SENSOR/blokir" 2>/dev/null)
+	KEPALA=$(echo "$DATA" | head -n 1)
+	case "$KEPALA" in
+		"#benteng "*) ;;
+		*) return ;;
+	esac
+
+	DIR=$(ls -d /tmp/dnsmasq.*.d 2>/dev/null | head -n 1)
+	[ -n "$DIR" ] || return
+	CONF="$DIR/benteng-blokir.conf"
+	BARU=/tmp/benteng-blokir.baru
+
+	echo "$DATA" | tail -n +2 | while read -r id domain sisa; do
+		# Hanya bentuk nama domain yang masuk ke konfigurasi dnsmasq.
+		if echo "$domain" | grep -Eq '^[a-z0-9-]+(\.[a-z0-9-]+)+$'; then
+			echo "address=/$domain/"
+		fi
+	done > "$BARU"
+
+	if { [ -s "$BARU" ] || [ -e "$CONF" ]; } && ! cmp -s "$BARU" "$CONF"; then
+		cp "$BARU" "$CONF"
+		/etc/init.d/dnsmasq restart >/dev/null 2>&1
+		logger -t benteng-responder "daftar blokir domain diperbarui: $(wc -l < "$BARU") domain"
+	fi
+	rm -f "$BARU"
+
+	set -- $KEPALA
+	if [ "$3" != "0" ]; then
+		wget -q -O /dev/null \
+			--post-data="sampai=$2" \
+			--header="X-Sensor-Token: $TOKEN" \
+			"$SERVER/api/sensors/$SENSOR/blokir/ack" 2>/dev/null
+	fi
 }
 
 pastikan_nft
@@ -76,6 +115,8 @@ while :; do
 			"$SERVER/api/sensors/$SENSOR/commands/$id/ack" 2>/dev/null
 		logger -t benteng-responder "$aksi $ip -> $H"
 	done
+
+	sinkron_blokir
 
 	PUTARAN=$((PUTARAN + 1))
 	if [ $((PUTARAN % SINKRON_TIAP)) -eq 0 ]; then

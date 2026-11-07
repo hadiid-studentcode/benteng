@@ -32,6 +32,8 @@ masuk, dan mengisolasi perangkat yang terinfeksi.
   tanpa kedip; badge sidebar menunjukkan insiden aktif dan perangkat belum dikenal.
 - ✅ Detail insiden: penjelasan bahasa awam, risiko, bukti visual (garis waktu beacon),
   langkah penanganan, data perangkat, dan linimasa penanganan dari jejak audit.
+- ✅ **Blokir domain untuk seluruh jaringan** dari insiden beaconing atau manual, lewat dnsmasq di
+  sensor. Perangkat lain yang masih mencoba menghubungi domain terblokir menjadi insiden baru.
 - ✅ Tindakan lewat **modal konfirmasi** (bukan `confirm()` browser) dan notifikasi toast.
 - ✅ **Login & peran**: `analis` (bisa bertindak) dan `pengamat` (hanya melihat, mis. pimpinan).
   Setiap tindakan tercatat atas nama akun di `audit_logs`.
@@ -148,7 +150,7 @@ Di lapangan, "sensor" = router OpenWrt fisik atau mini-PC x86; tidak terikat VM.
 
 - **Sensor:** OpenWrt 24.10.8, dnsmasq, nftables, uhttpd, paket `conntrack`,
   skrip shell (ash/BusyBox) + procd init.
-- **Server:** PHP 8.5 + Laravel 13 (via FlyEnv di Windows), **SQLite**, Blade.
+- **Server:** PHP 8.5 + Laravel 13 (via FlyEnv di Windows), **SQLite**, Blade, tampilan [Stisla](https://github.com/stisla/stisla) v3 (Tailwind v4).
   Tidak pakai Docker/Python agar muat di 8 GB RAM.
 - **Komunikasi sensor↔server:** HTTP + header token `X-Sensor-Token`.
   (Di lapangan idealnya lewat WireGuard; di lab via host-only.)
@@ -167,6 +169,7 @@ benteng/
 │  │  ├─ DashboardController.php            # halaman Dashboard, Topologi, Sensor
 │  │  ├─ InsidenController.php              # daftar & detail insiden + karantina/bukan ancaman/lepas
 │  │  ├─ PerangkatController.php            # halaman Perangkat
+│  │  ├─ BlokirController.php               # blokir domain: dari insiden, manual, lepas
 │  │  ├─ AuditController.php                # halaman Jejak audit
 │  │  ├─ Concerns/MembacaDataPantauan.php   # query baca bersama semua halaman
 │  │  └─ SesiController.php                 # login / logout
@@ -178,9 +181,10 @@ benteng/
 │  ├─ database/migrations/                  # dns_events, incidents, commands+audit_logs, perangkat, ...
 │  ├─ resources/views/benteng/              # layout (sidebar), halaman, partials (topologi, grafik, tabel)
 │  ├─ resources/views/components/           # ikon, lencana, tombol, kartu, aksi-insiden, ...
-│  ├─ resources/{css/app.css, js/app.js}    # Tailwind v4 + modal, toast, penyegaran otomatis
+│  ├─ resources/{css/app.css, js/app.js}    # Stisla + Tailwind v4, modal, toast, penyegaran otomatis
+│  ├─ resources/css/meridian/               # tata letak dari template Meridian Stisla (MIT)
 │  ├─ routes/{web.php, api.php, console.php}
-│  ├─ tests/Feature/                        # 45 test (php artisan test)
+│  ├─ tests/Feature/                        # 58 test (php artisan test)
 │  └─ docs/README.md                        # dokumen ini
 │
 └─ benteng-starter/                        # file untuk sensor & lab (disalin via scp)
@@ -243,17 +247,22 @@ Route::post('/ingest/dhcp', [IngestController::class, 'dhcp']);
 Route::get('/sensors/{sensor}/commands', [CommandController::class, 'ambil']);
 Route::post('/sensors/{sensor}/commands/{id}/ack', [CommandController::class, 'ack']);
 Route::get('/sensors/{sensor}/karantina', [CommandController::class, 'karantina']);
+Route::get('/sensors/{sensor}/blokir', [CommandController::class, 'blokir']);
+Route::post('/sensors/{sensor}/blokir/ack', [CommandController::class, 'ackBlokir']);
 ```
 
 `routes/web.php`:
 ```php
 Route::redirect('/', '/dashboard');
 // guest: GET/POST /login (POST dibatasi 5x per menit)
-// auth:  POST /logout, GET /dashboard, /insiden, /insiden/{id}, /perangkat, /topologi, /sensor, /audit
+// auth:  POST /logout, GET /dashboard, /insiden, /insiden/{id}, /perangkat, /blokir, /topologi, /sensor, /audit
 // auth + can:bertindak (hanya peran analis):
 Route::post('/insiden/{id}/karantina', ...)->name('benteng.karantina');
 Route::post('/insiden/{id}/false-positive', ...)->name('benteng.false-positive');  // tombol "Bukan ancaman" / "Daftarkan sah"
 Route::post('/insiden/{id}/lepas', ...)->name('benteng.lepas');
+Route::post('/insiden/{id}/blokir-domain', ...)->name('benteng.blokir.insiden');
+Route::post('/blokir', ...)->name('benteng.blokir.tambah');
+Route::post('/blokir/{id}/lepas', ...)->name('benteng.blokir.lepas');
 ```
 
 `routes/console.php`: `Schedule::command('benteng:deteksi')->everyMinute()->withoutOverlapping();`
@@ -336,7 +345,7 @@ query NTP korban tiap ~70 dtk ke `pool.ntp.org` juga tidak memicu alarm berkat d
 ```powershell
 cd benteng-server
 composer install
-npm install; npm run build   # tampilan (Tailwind) dibangun sekali; hasilnya lokal di public/build, tanpa CDN
+npm install; npm run build   # tampilan (Stisla + Tailwind) dibangun sekali; hasilnya lokal di public/build, tanpa CDN
 # .env: DB_CONNECTION=sqlite  +  BENTENG_SENSOR_TOKEN=<token acak: php -r "echo bin2hex(random_bytes(16));">
 php artisan migrate
 php artisan benteng:pengguna analis@satuan.mil --nama="Serda Budi"                   # sandi acak ditampilkan
@@ -384,8 +393,8 @@ diperlukan bila simulator dijalankan ulang setelah insiden yang sama pernah dita
 1. Login sebagai analis. Dashboard menampilkan banner hijau "Jaringan dalam kondisi aman"
    dan topologi live: server → sensor → VM korban (hijau, normal).
 2. Jalankan simulator di VM korban. Grafik aktivitas DNS melonjak.
-3. Tanpa mengetik perintah apa pun: dalam 1–3 menit **insiden muncul sendiri**
-   (beaconing + DGA), banner berubah merah, badge sidebar Insiden menyala, judul tab menjadi "(2) ...".
+3. Tanpa mengetik perintah apa pun, **insiden muncul sendiri**: DGA dalam 1–3 menit dan
+   beaconing dalam sekitar 5–6 menit. Banner berubah merah, badge sidebar Insiden menyala, judul tab menjadi "(2) ...".
 4. Buka **Detail** insiden: penjelasan bahasa awam, garis waktu beacon yang rapi seperti jam,
    peluang kebetulan "kurang dari 1 banding 1 miliar", langkah penanganan.
 5. Split screen: terminal korban (kiri) + dashboard (kanan). Di korban `ping 8.8.8.8` → jalan.

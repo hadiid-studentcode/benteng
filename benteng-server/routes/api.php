@@ -15,3 +15,5 @@ Route::post('/ingest/dhcp', [IngestController::class, 'dhcp']);
 Route::get('/sensors/{sensor}/commands', [CommandController::class, 'ambil']);
 Route::post('/sensors/{sensor}/commands/{id}/ack', [CommandController::class, 'ack']);
 Route::get('/sensors/{sensor}/karantina', [CommandController::class, 'karantina']);
+Route::get('/sensors/{sensor}/blokir', [CommandController::class, 'blokir']);
+Route::post('/sensors/{sensor}/blokir/ack', [CommandController::class, 'ackBlokir']);

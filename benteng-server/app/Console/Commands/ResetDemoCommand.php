@@ -20,7 +20,7 @@ class ResetDemoCommand extends Command
 
     public function handle(): int
     {
-        $pertanyaan = 'Semua data DNS, insiden, perintah, jejak audit, dan daftar perangkat akan dihapus. Akun tetap ada. Lanjutkan?';
+        $pertanyaan = 'Semua data DNS, insiden, perintah, blokir domain, jejak audit, dan daftar perangkat akan dihapus. Akun tetap ada. Lanjutkan?';
         if (! $this->option('force') && ! $this->confirm($pertanyaan)) {
             $this->line('Dibatalkan, tidak ada data yang dihapus.');
 
@@ -38,6 +38,7 @@ class ResetDemoCommand extends Command
             DB::table('commands')->delete();
             DB::table('audit_logs')->delete();
             DB::table('perangkat')->delete();
+            DB::table('domain_diblokir')->delete();
 
             // Perangkat yang masih dikarantina dilepas sensor, agar keadaan sensor sama dengan data.
             foreach ($dikarantina as $p) {

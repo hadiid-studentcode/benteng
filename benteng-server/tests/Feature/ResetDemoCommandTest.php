@@ -40,7 +40,7 @@ class ResetDemoCommandTest extends TestCase
         $this->buatInsiden();
 
         $this->artisan('benteng:reset-demo')
-            ->expectsConfirmation('Semua data DNS, insiden, perintah, jejak audit, dan daftar perangkat akan dihapus. Akun tetap ada. Lanjutkan?', 'no')
+            ->expectsConfirmation('Semua data DNS, insiden, perintah, blokir domain, jejak audit, dan daftar perangkat akan dihapus. Akun tetap ada. Lanjutkan?', 'no')
             ->expectsOutput('Dibatalkan, tidak ada data yang dihapus.')
             ->assertSuccessful();
 
