@@ -56,39 +56,45 @@ Di lab, karantina diterapkan sensor 2–4 detik setelah analis mengklik dan blok
 | **Domain diblokir** | **Topologi jaringan** |
 | ![Daftar blokir](benteng-server/docs/gambar/blokir.png) | ![Topologi](benteng-server/docs/gambar/topologi.png) |
 
-## Coba tanpa lab
+## Coba langsung (tanpa sensor dan tanpa VM)
 
-Detektor dan seluruh fitur server bisa diuji tanpa sensor dan tanpa VM. Butuh PHP 8.5 dan Composer.
+Butuh PHP 8.5, Composer, dan Node.js. Pemasangan pertama sekitar 5 menit karena mengunduh dependensi.
 
 ```powershell
 git clone https://github.com/hadiid-studentcode/benteng.git
 cd benteng\benteng-server
-composer install
-copy .env.example .env
-php artisan key:generate
+composer setup   # sekali saja: dependensi, database, tampilan, akun dan data demo
+composer demo    # setiap kali mencoba: data simulasi dibuat ulang, lalu server berjalan
+```
 
+Buka `http://localhost:8000` dan masuk dengan salah satu akun demo:
+
+| Email | Kata sandi | Peran |
+| --- | --- | --- |
+| `analis@demo.local` | `analis-demo` | Analis: bisa mengarantina, memblokir domain, dan menutup insiden |
+| `pengamat@demo.local` | `pengamat-demo` | Pengamat: hanya melihat |
+
+Mode demo berisi data simulasi 25 menit terakhir: PC staf yang terinfeksi (beaconing dan domain acak), kamera CCTV yang melapor ke cloud vendor, dan laptop tamu yang belum dikenal. Sensornya ditiru oleh server, jadi karantina dan blokir domain "diterapkan" sekitar 2 detik setelah diklik. Pada lab sungguhan, perintah yang sama dijalankan oleh sensor OpenWrt (2-4 detik untuk karantina).
+
+Uji kualitas detektor dan test otomatis, dari folder yang sama:
+
+```powershell
 php artisan benteng:deteksi --evaluasi --seed=1 --percobaan=100
 php artisan test
 ```
 
 - Perintah evaluasi menjalankan 11 skenario serangan dan trafik normal sebanyak 100 kali, lalu mencetak angka yang sama dengan [Hasil evaluasi](#hasil-evaluasi): 599/600 terdeteksi dan 0/300 alarm palsu.
-- `php artisan test` menjalankan 58 test otomatis: ingest data sensor, deteksi, karantina, blokir domain, login dan peran, serta jejak audit.
+- `php artisan test` menjalankan 63 test otomatis: ingest data sensor, deteksi, karantina, blokir domain, login dan peran, jejak audit, serta mode demo.
 
-## Menjalankan dashboard
+## Menjalankan dengan sensor sungguhan
 
-Lanjutan dari langkah di atas. Butuh juga Node.js.
+Untuk lab VirtualBox atau router OpenWrt, ikuti [panduan pemasangan sensor](benteng-server/docs/PANDUAN-SENSOR.md). Di `.env`, isi `BENTENG_MODE_DEMO=false` dan samakan `BENTENG_SENSOR_TOKEN` dengan token di skrip sensor, lalu jalankan:
 
 ```powershell
-npm install; npm run build
-New-Item database\database.sqlite
-# di .env isi BENTENG_SENSOR_TOKEN dengan token acak: php -r "echo bin2hex(random_bytes(16));"
-php artisan migrate
 php artisan benteng:pengguna analis@satuan.mil --nama="Nama Analis"   # kata sandi acak ditampilkan
 php artisan serve --host=0.0.0.0 --port=8000
 php artisan schedule:work   # di terminal kedua: detektor otomatis tiap menit
 ```
-
-Buka `http://localhost:8000` dan masuk dengan akun tadi. Dashboard mulai terisi setelah sensor mengirim data. Cara memasang sensor dan lab VirtualBox ada di [panduan pemasangan sensor](benteng-server/docs/PANDUAN-SENSOR.md).
 
 ## Isi repo
 
