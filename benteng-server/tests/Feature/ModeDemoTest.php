@@ -39,7 +39,7 @@ class ModeDemoTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'pengamat@demo.local', 'peran' => 'pengamat']);
         $this->assertDatabaseMissing('incidents', ['judul' => 'Insiden lama']);
         $this->assertDatabaseHas('incidents', ['jenis' => 'beaconing', 'client_ip' => '192.168.1.142', 'status' => 'baru']);
-        $this->assertDatabaseHas('incidents', ['jenis' => 'beaconing', 'client_ip' => '192.168.1.187', 'status' => 'baru']);
+        $this->assertDatabaseMissing('incidents', ['client_ip' => '192.168.1.203']);
         $this->assertDatabaseHas('incidents', ['jenis' => 'dga', 'client_ip' => '192.168.1.142']);
         $this->assertDatabaseHas('incidents', ['jenis' => 'perangkat_asing', 'client_ip' => '192.168.1.214']);
         $this->assertDatabaseCount('commands', 0);

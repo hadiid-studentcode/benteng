@@ -106,7 +106,7 @@
             <ul class="flex flex-col gap-4 text-sm leading-6">
                 <li class="flex gap-3">
                     <span class="icon-box icon-box--sm icon-box--info shrink-0"><x-ikon nama="larangan" class="size-3.5" /></span>
-                    <span><strong class="font-semibold">Blokir domain</strong> untuk perangkat yang harus tetap bekerja, seperti CCTV. Hanya koneksi ke domain itu yang diputus, untuk seluruh jaringan.</span>
+                    <span><strong class="font-semibold">Blokir domain</strong> untuk perangkat yang harus tetap bekerja. Hanya koneksi ke domain itu yang diputus, untuk seluruh jaringan.</span>
                 </li>
                 <li class="flex gap-3">
                     <span class="icon-box icon-box--sm icon-box--danger shrink-0"><x-ikon nama="kunci" class="size-3.5" /></span>

@@ -22,13 +22,11 @@ Sensor murah berbasis OpenWrt dipasang di gerbang jaringan satuan. Sensor mengen
 | **Pencegahan** | Satu klik memblokir domain di DNS sensor untuk semua perangkat. Perangkat lain yang masih mencoba menghubunginya otomatis dilaporkan sebagai insiden baru. |
 | **Akuntabilitas** | Login dengan peran analis dan pengamat. Setiap tindakan masuk jejak audit atas nama akun. |
 
-Skenario IT/OT: kamera CCTV milik satuan yang rutin melapor ke server vendor di luar negeri bisa diblokir domainnya tanpa memutus kamera dari jaringan.
-
 ## Arsitektur
 
 ```mermaid
 flowchart LR
-    P["Perangkat satuan<br/>PC, CCTV, IoT"] -->|"DNS + DHCP"| S["Sensor BENTENG<br/>OpenWrt"]
+    P["Perangkat satuan<br/>PC, laptop, IoT"] -->|"DNS + DHCP"| S["Sensor BENTENG<br/>OpenWrt"]
     S -->|"Log DNS dan daftar DHCP<br/>tiap menit"| L["Server pusat on-premise<br/>Laravel + SQLite"]
     L -->|"Perintah karantina dan<br/>daftar blokir, tiap 5 detik"| S
     A["Analis"] <-->|"Dashboard"| L
@@ -74,7 +72,7 @@ Buka `http://localhost:8000` dan masuk dengan salah satu akun demo:
 | `analis@demo.local` | `analis-demo` | Analis: bisa mengarantina, memblokir domain, dan menutup insiden |
 | `pengamat@demo.local` | `pengamat-demo` | Pengamat: hanya melihat |
 
-Mode demo berisi data simulasi 25 menit terakhir: PC staf yang terinfeksi (beaconing dan domain acak), kamera CCTV yang melapor ke cloud vendor, dan laptop tamu yang belum dikenal. Sensornya ditiru oleh server, jadi karantina dan blokir domain "diterapkan" sekitar 2 detik setelah diklik. Pada lab sungguhan, perintah yang sama dijalankan oleh sensor OpenWrt (2-4 detik untuk karantina).
+Mode demo berisi data simulasi 25 menit terakhir: PC staf yang terinfeksi (beaconing dan domain acak), PC staf lain yang normal, dan laptop tamu yang belum dikenal. Sensornya ditiru oleh server, jadi karantina dan blokir domain "diterapkan" sekitar 2 detik setelah diklik. Pada lab sungguhan, perintah yang sama dijalankan oleh sensor OpenWrt (2-4 detik untuk karantina).
 
 Uji kualitas detektor dan test otomatis, dari folder yang sama:
 

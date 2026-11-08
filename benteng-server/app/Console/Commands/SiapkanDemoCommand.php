@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Menyiapkan BENTENG untuk dicoba juri tanpa sensor dan tanpa VM: akun demo, token
- * sensor, dan data simulasi 25 menit terakhir (beaconing, domain acak, CCTV yang
- * melapor ke cloud vendor, dan perangkat asing). Sensor ditiru oleh benteng:sensor-tiruan.
+ * sensor, dan data simulasi 25 menit terakhir (beaconing, domain acak, dan perangkat
+ * asing). Sensor ditiru oleh benteng:sensor-tiruan.
  *
  *   php artisan benteng:siapkan-demo
  *
@@ -100,11 +100,6 @@ class SiapkanDemoCommand extends Command
             $query('192.168.1.142', substr(str_shuffle('bcdfghjklmnpqrstvwxz'), 0, 14).'.example', $sekarang - 1400 + $i * 9);
         }
 
-        // Kamera CCTV yang melapor ke cloud vendor tiap ~60 detik.
-        for ($t = $sekarang - 1500; $t < $sekarang - 60; $t += 60 + random_int(-2, 2)) {
-            $query('192.168.1.187', 'litedev.hik-connect.com', $t);
-        }
-
         // PC staf lain yang dipakai normal.
         foreach (['www.detik.com', 'www.kompas.com', 'web.whatsapp.com', 'www.youtube.com', 'mail.google.com'] as $domain) {
             for ($k = 0; $k < 10; $k++) {
@@ -123,7 +118,6 @@ class SiapkanDemoCommand extends Command
         ];
         DB::table('perangkat')->insert([
             $perangkat('08:00:27:23:23:0f', '192.168.1.142', 'pc-staf-01', true, 3000),
-            $perangkat('44:19:b6:c0:a8:01', '192.168.1.187', 'DS-2CD2043G2-I', true, 3000),
             $perangkat('08:00:27:41:7a:10', '192.168.1.203', 'pc-staf-02', true, 3000),
             $perangkat('0a:3c:91:7d:e2:4f', '192.168.1.214', 'laptop-tamu', false, 300),
         ]);

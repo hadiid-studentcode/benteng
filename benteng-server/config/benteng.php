@@ -53,7 +53,7 @@ return [
                 .'sebagai batu loncatan ke perangkat lain di jaringan satuan.',
             'langkah' => [
                 'Karantina perangkat agar terputus dari jaringan.',
-                'Bila perangkat harus tetap bekerja (mis. kamera CCTV), klik "Blokir domain" agar perangkat apa pun di jaringan tidak bisa menghubungi server itu.',
+                'Bila perangkat harus tetap bekerja, klik "Blokir domain" agar perangkat apa pun di jaringan tidak bisa menghubungi server itu.',
                 'Catat pemilik/pengguna perangkat dan sejak kapan perangkat dipakai.',
                 'Jangan instal ulang dulu: serahkan ke petugas siber satuan atas untuk diperiksa, bukti bisa hilang.',
                 'Periksa apakah perangkat lain menghubungi domain yang sama.',
