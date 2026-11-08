@@ -8,6 +8,16 @@ use Illuminate\Support\Facades\DB;
 abstract class TestCase extends BaseTestCase
 {
     /**
+     * Test tidak butuh hasil `npm run build`, sehingga bisa dijalankan dari salinan repo yang baru.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutVite();
+    }
+
+    /**
      * Tabel BENTENG memakai query builder tanpa model, jadi data uji dibuat lewat pembantu ini.
      *
      * @param  array<string, mixed>  $ubah

@@ -56,26 +56,39 @@ Di lab, karantina diterapkan sensor 2–4 detik setelah analis mengklik dan blok
 | **Domain diblokir** | **Topologi jaringan** |
 | ![Daftar blokir](benteng-server/docs/gambar/blokir.png) | ![Topologi](benteng-server/docs/gambar/topologi.png) |
 
-## Menjalankan
+## Coba tanpa lab
 
-Butuh PHP 8.5, Composer, dan Node.js.
+Detektor dan seluruh fitur server bisa diuji tanpa sensor dan tanpa VM. Butuh PHP 8.5 dan Composer.
 
 ```powershell
-cd benteng-server
+git clone https://github.com/hadiid-studentcode/benteng.git
+cd benteng\benteng-server
 composer install
-npm install; npm run build
 copy .env.example .env
 php artisan key:generate
-# di .env: DB_CONNECTION=sqlite dan BENTENG_SENSOR_TOKEN=<token acak>
-php artisan migrate
-php artisan benteng:pengguna analis@satuan.mil --nama="Nama Analis"
-php artisan serve --host=0.0.0.0 --port=8000
-php artisan schedule:work   # di terminal kedua
+
+php artisan benteng:deteksi --evaluasi --seed=1 --percobaan=100
+php artisan test
 ```
 
-- Sensor dan lab VirtualBox: [panduan pemasangan sensor](benteng-server/docs/PANDUAN-SENSOR.md)
-- Test otomatis: `php artisan test`
-- Uji kualitas detektor tanpa lab: `php artisan benteng:deteksi --evaluasi --percobaan=100`
+- Perintah evaluasi menjalankan 11 skenario serangan dan trafik normal sebanyak 100 kali, lalu mencetak angka yang sama dengan [Hasil evaluasi](#hasil-evaluasi): 599/600 terdeteksi dan 0/300 alarm palsu.
+- `php artisan test` menjalankan 58 test otomatis: ingest data sensor, deteksi, karantina, blokir domain, login dan peran, serta jejak audit.
+
+## Menjalankan dashboard
+
+Lanjutan dari langkah di atas. Butuh juga Node.js.
+
+```powershell
+npm install; npm run build
+New-Item database\database.sqlite
+# di .env isi BENTENG_SENSOR_TOKEN dengan token acak: php -r "echo bin2hex(random_bytes(16));"
+php artisan migrate
+php artisan benteng:pengguna analis@satuan.mil --nama="Nama Analis"   # kata sandi acak ditampilkan
+php artisan serve --host=0.0.0.0 --port=8000
+php artisan schedule:work   # di terminal kedua: detektor otomatis tiap menit
+```
+
+Buka `http://localhost:8000` dan masuk dengan akun tadi. Dashboard mulai terisi setelah sensor mengirim data. Cara memasang sensor dan lab VirtualBox ada di [panduan pemasangan sensor](benteng-server/docs/PANDUAN-SENSOR.md).
 
 ## Isi repo
 

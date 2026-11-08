@@ -347,6 +347,7 @@ cd benteng-server
 composer install
 npm install; npm run build   # tampilan (Stisla + Tailwind) dibangun sekali; hasilnya lokal di public/build, tanpa CDN
 # .env: DB_CONNECTION=sqlite  +  BENTENG_SENSOR_TOKEN=<token acak: php -r "echo bin2hex(random_bytes(16));">
+New-Item database/database.sqlite   # file database SQLite kosong
 php artisan migrate
 php artisan benteng:pengguna analis@satuan.mil --nama="Serda Budi"                   # sandi acak ditampilkan
 php artisan benteng:pengguna danki@satuan.mil --nama="Kapten Andi" --peran=pengamat
