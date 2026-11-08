@@ -29,3 +29,8 @@ Thumbs.db
 # Konfigurasi asisten AI lokal, tidak ikut repo publik
 /.claude
 /.agents
+/CLAUDE.md
+/AGENTS.md
+/.mcp.json
+/boost.json
+/opencode.json
