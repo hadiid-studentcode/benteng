@@ -4,6 +4,10 @@ return [
     // Token rahasia yang sama dengan TOKEN di /usr/bin/benteng-agent pada sensor.
     'sensor_token' => env('BENTENG_SENSOR_TOKEN', ''),
 
+    // Mode demo untuk juri: data simulasi dan sensor tiruan, tanpa VM atau sensor sungguhan.
+    // Diaktifkan otomatis oleh `php artisan benteng:siapkan-demo` pada instalasi baru.
+    'mode_demo' => (bool) env('BENTENG_MODE_DEMO', false),
+
     // Sensor dianggap online bila benteng-responder menarik perintah dalam sekian
     // detik terakhir. Responder menarik tiap 5 detik, jadi 30 detik = 6x terlewat.
     'responder_online_detik' => 30,

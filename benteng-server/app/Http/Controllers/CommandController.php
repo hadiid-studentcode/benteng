@@ -102,9 +102,20 @@ class CommandController extends Controller
     {
         $this->cekToken($request);
 
+        self::terapkanBlokir($sensor, (int) $request->input('sampai'));
+
+        return response()->json(['status' => 'ok']);
+    }
+
+    /**
+     * Tandai blokir domain sampai id tertentu sudah diterapkan sensor, dan catat di jejak audit.
+     * Dipakai juga oleh sensor tiruan pada mode demo.
+     */
+    public static function terapkanBlokir(string $sensor, int $sampai): void
+    {
         $baru = DB::table('domain_diblokir')
             ->where('sensor', $sensor)
-            ->where('id', '<=', (int) $request->input('sampai'))
+            ->where('id', '<=', $sampai)
             ->whereNull('diterapkan_pada')
             ->get();
 
@@ -119,8 +130,6 @@ class CommandController extends Controller
                 'created_at' => now(),
             ]);
         }
-
-        return response()->json(['status' => 'ok']);
     }
 
     /**
@@ -135,21 +144,31 @@ class CommandController extends Controller
         $cmd = DB::table('commands')->where('id', $id)->where('sensor', $sensor)->first();
         abort_if(! $cmd, 404, 'Perintah tidak ditemukan');
 
-        DB::table('commands')->where('id', $id)->update([
+        self::selesaikanPerintah($cmd, $hasil);
+
+        return response()->json(['status' => 'ok']);
+    }
+
+    /**
+     * Simpan hasil perintah dari sensor (ok|gagal) dan catat di jejak audit.
+     * Dipakai juga oleh sensor tiruan pada mode demo.
+     */
+    public static function selesaikanPerintah(object $cmd, string $hasil): void
+    {
+        DB::table('commands')->where('id', $cmd->id)->update([
             'status' => $hasil === 'ok' ? 'selesai' : 'gagal',
             'hasil' => $hasil,
+            'diambil_pada' => $cmd->diambil_pada ?? now(),
             'selesai_pada' => now(),
             'updated_at' => now(),
         ]);
 
         DB::table('audit_logs')->insert([
-            'pelaku' => "sensor:$sensor",
+            'pelaku' => "sensor:{$cmd->sensor}",
             'aksi' => $cmd->aksi.' '.$hasil,
             'target' => $cmd->target_ip,
             'incident_id' => $cmd->incident_id,
             'created_at' => now(),
         ]);
-
-        return response()->json(['status' => 'ok']);
     }
 }

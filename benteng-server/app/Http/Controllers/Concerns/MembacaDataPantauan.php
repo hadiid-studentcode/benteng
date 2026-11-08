@@ -8,6 +8,7 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -25,6 +26,11 @@ trait MembacaDataPantauan
      */
     protected function tampilkan(Request $request, string $halaman, array $data): View|string
     {
+        // Mode demo: sensor tiruan ikut berjalan setiap halaman dimuat (dan disegarkan tiap 5 detik).
+        if (config('benteng.mode_demo')) {
+            Artisan::call('benteng:sensor-tiruan');
+        }
+
         /** @var View $view */
         $view = view($halaman, $data);
 
