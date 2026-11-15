@@ -150,7 +150,7 @@ Di lapangan, "sensor" = router OpenWrt fisik atau mini-PC x86; tidak terikat VM.
 
 - **Sensor:** OpenWrt 24.10.8, dnsmasq, nftables, uhttpd, paket `conntrack`,
   skrip shell (ash/BusyBox) + procd init.
-- **Server:** PHP 8.5 + Laravel 13 (via FlyEnv di Windows), **SQLite**, Blade, tampilan [Stisla](https://github.com/stisla/stisla) v3 (Tailwind v4).
+- **Server:** PHP 8.4.1+ (teruji 8.5) + Laravel 13, **SQLite**, Blade, tampilan [Stisla](https://github.com/stisla/stisla) v3 (Tailwind v4).
   Tidak pakai Docker/Python agar muat di 8 GB RAM.
 - **Komunikasi sensor↔server:** HTTP + header token `X-Sensor-Token`.
   (Di lapangan idealnya lewat WireGuard; di lab via host-only.)
@@ -339,42 +339,17 @@ query NTP korban tiap ~70 dtk ke `pool.ntp.org` juga tidak memicu alarm berkat d
 
 ---
 
-## 9. Setup dari nol (ringkas)
+## 9. Pemasangan
 
-**Server (Windows, FlyEnv, PHP 8.5):**
-```powershell
-cd benteng-server
-composer install
-npm install; npm run build   # tampilan (Stisla + Tailwind) dibangun sekali; hasilnya lokal di public/build, tanpa CDN
-# .env: DB_CONNECTION=sqlite  +  BENTENG_SENSOR_TOKEN=<token acak: php -r "echo bin2hex(random_bytes(16));">
-New-Item database/database.sqlite   # file database SQLite kosong
-php artisan migrate
-php artisan benteng:pengguna analis@satuan.mil --nama="Serda Budi"                   # sandi acak ditampilkan
-php artisan benteng:pengguna danki@satuan.mil --nama="Kapten Andi" --peran=pengamat
-# dua terminal:
-php artisan serve --host=0.0.0.0 --port=8000
-php artisan schedule:work          # detektor otomatis tiap menit
-```
+Cara memasang ada di dua tempat, supaya tidak ada langkah yang berbeda-beda:
 
-**Sensor (OpenWrt di VirtualBox):** ikuti **[PANDUAN-SENSOR.md](PANDUAN-SENSOR.md)**,
-langkah demi langkah dari membuat VM sampai uji karantina. Ringkasnya:
-1. VM OpenWrt 24.10.8 x86-64 EFI dengan tiga adapter: Internal `benteng-lan`, NAT, Host-only.
-2. Di konsol VM: kata sandi root dan antarmuka `mgmt` 192.168.56.20 di `eth2`.
-3. Lewat SSH: zona waktu WIB, `logqueries` dnsmasq, salin skrip BENTENG, isi token,
-   halaman karantina uhttpd :8081, layanan `benteng-collect` dan `benteng-responder`, cron agent.
+- **[README utama, bagian "Cara mencoba"](../../README.md#cara-mencoba)**: mode demo (`composer setup` lalu `composer demo`), lab VirtualBox, router OpenWrt, dan hosting.
+- **[PANDUAN-SENSOR.md](PANDUAN-SENSOR.md)**: langkah lengkap sensor, VM korban, uji akhir, dan pemecahan masalah.
 
-> Catatan: pengalihan HTTP ke halaman karantina (`benteng-portal.nft`) dimuat terpisah
-> dari aturan karantina, jadi kalau gagal dimuat, pemutusan koneksi tetap berjalan.
-> Pastikan *software flow offloading* fw4 tetap mati (bawaan), karena offloading
-> melewati chain forward sehingga koneksi lama perangkat karantina bisa lolos.
-
-**VM korban (Alpine):**
-```sh
-python3 /root/benteng-trafik-uji.py --menit 6                  # demo serangan
-python3 /root/benteng-trafik-uji.py --mode normal --menit 60   # uji alarm palsu
-```
-
-**Uji kualitas detektor (tanpa lab):** `php artisan benteng:deteksi --evaluasi --percobaan=100`
+Lab sungguhan bisa dipasang sekali jalan setelah sensor bisa di-ping:
+`benteng-starter/pasang-sensor.ps1` (Windows) atau `benteng-starter/pasang-sensor.sh`
+(Linux/macOS). Keduanya menyiapkan server, lalu menyalin `benteng-starter/pasang.sh` ke
+sensor dan menjalankannya di sana.
 
 **Menyiapkan data bersih untuk rekaman demo:** `php artisan benteng:reset-demo`.
 Perintah ini menghapus data DNS, insiden, perintah, jejak audit, dan daftar perangkat;
@@ -382,10 +357,9 @@ akun tetap ada, dan perangkat yang masih dikarantina dilepas oleh sensor. Ini ju
 diperlukan bila simulator dijalankan ulang setelah insiden yang sama pernah ditandai
 "Bukan ancaman", karena pola yang sudah ditutup analis tidak dilaporkan ulang.
 
-> ⚠️ **Token sensor** harus sama di `benteng-agent`, `benteng-responder`, dan
-> `.env` (`BENTENG_SENSOR_TOKEN`). File di repo sekarang berisi placeholder
-> `GANTI-DENGAN-TOKEN-ACAK`; token lama masih ada di riwayat git, jadi **ganti
-> token baru sebelum repo dijadikan publik**.
+> **Token sensor** harus sama di `benteng-agent`, `benteng-responder`, dan `.env`
+> (`BENTENG_SENSOR_TOKEN`). File di repo berisi placeholder `GANTI-DENGAN-TOKEN-ACAK`;
+> skrip pemasangan mengisinya otomatis dari `.env`.
 
 ---
 

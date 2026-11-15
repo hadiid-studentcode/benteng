@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Masuk - BENTENG</title>
-    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="icon" type="image/png" href="{{ asset('assets/images/ikon.png') }}">
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -13,7 +13,7 @@
     <section class="auth__panel">
         <div class="auth__form">
             <div>
-                <span class="icon-box icon-box--primary icon-box--lg mb-4 lg:hidden"><x-ikon nama="perisai" /></span>
+                <img src="{{ asset('assets/images/logo-gelap.png') }}" alt="BENTENG" class="mb-6 h-9 w-auto lg:hidden">
                 <h1 class="text-2xl">Masuk ke dashboard</h1>
                 <p class="mt-1 text-muted-foreground">Gunakan akun yang diberikan admin satuan.</p>
             </div>
@@ -48,10 +48,7 @@
 
     <aside class="auth__aside">
         <a href="{{ route('login') }}" class="auth__brand">
-            <span class="auth__brand-mark">
-                <svg width="1em" height="1em" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 3 L27 7 V15 C27 22 22 27 16 29 C10 27 5 22 5 15 V7 Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M11 16 L15 20 L21 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </span>
-            <span class="auth__brand-text"><span class="auth__brand-name">BENTENG</span></span>
+            <img src="{{ asset('assets/images/logo-terang.png') }}" alt="BENTENG" class="h-11 w-auto">
         </a>
         <div class="auth__pitch">
             <h2 class="auth__pitch-title">Pertahanan jaringan untuk <span>satuan tanpa tim siber.</span></h2>
