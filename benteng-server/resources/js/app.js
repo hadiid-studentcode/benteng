@@ -8,6 +8,22 @@ const isi = document.querySelector('#isi[data-segar]');
 const JUDUL = document.title;
 const JEDA_SEGAR_MS = 5000;
 
+// --- Mode terang/gelap ------------------------------------------------------------
+// Tema awal dipasang di <head> (partials/tema.blade.php) agar halaman tidak berkedip.
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('[data-ganti-tema]')) {
+        return;
+    }
+    const tema = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = tema;
+    try {
+        localStorage.setItem('benteng-tema', tema);
+    } catch {
+        // Penyimpanan browser diblokir: tema tetap berganti, hanya tidak diingat.
+    }
+});
+
 // --- Notifikasi setelah tindakan ------------------------------------------------
 
 // Ikon bawaan toast Stisla butuh pustaka Lucide; di sini cukup dua ikon statis.

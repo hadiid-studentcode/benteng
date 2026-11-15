@@ -7,6 +7,13 @@
 
 @import '@stisla/style/components.css';
 
+/* Latar mode gelap: navy sangat gelap, senada dengan logo dan panel login. */
+:root {
+    @variant dark {
+        --color-background: oklch(0.16 0.014 257.69);
+    }
+}
+
 /* Tata letak dari template Meridian milik Stisla (lisensi MIT). */
 @import './meridian/utilities.css';
 @import './meridian/content.css';

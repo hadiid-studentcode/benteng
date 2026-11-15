@@ -5,15 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Masuk - BENTENG</title>
     <link rel="icon" type="image/png" href="{{ asset('assets/images/ikon.png') }}">
+    @include('benteng.partials.tema')
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
 <main class="auth">
     <section class="auth__panel">
+        <x-tombol-tema class="auth__toggle" />
         <div class="auth__form">
             <div>
-                <img src="{{ asset('assets/images/logo-gelap.png') }}" alt="BENTENG" class="mb-6 h-9 w-auto lg:hidden">
+                <img src="{{ asset('assets/images/logo-gelap.png') }}" alt="BENTENG" class="mb-6 h-9 w-auto lg:hidden dark:hidden">
+                <img src="{{ asset('assets/images/logo-terang.png') }}" alt="BENTENG" class="mb-6 hidden h-9 w-auto dark:block lg:dark:hidden">
                 <h1 class="text-2xl">Masuk ke dashboard</h1>
                 <p class="mt-1 text-muted-foreground">Gunakan akun yang diberikan admin satuan.</p>
             </div>

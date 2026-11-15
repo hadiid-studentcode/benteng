@@ -23,6 +23,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('judul') - BENTENG</title>
     <link rel="icon" type="image/png" href="{{ asset('assets/images/ikon.png') }}">
+    @include('benteng.partials.tema')
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -31,8 +32,12 @@
     <aside class="sidebar sidebar--lg sidebar--app" data-stisla-sidebar>
         <header class="sidebar__header">
             <a class="sidebar__brand" href="{{ route('benteng.dashboard') }}">
-                <img src="{{ asset('assets/images/perisai-gelap.png') }}" alt="" class="!h-7 !w-auto">
-                <span><img src="{{ asset('assets/images/teks-gelap.png') }}" alt="BENTENG" class="!h-[15px] !w-auto"></span>
+                <img src="{{ asset('assets/images/perisai-gelap.png') }}" alt="" class="!h-7 !w-auto dark:!hidden">
+                <img src="{{ asset('assets/images/perisai-terang.png') }}" alt="" class="!hidden !h-7 !w-auto dark:!block">
+                <span>
+                    <img src="{{ asset('assets/images/teks-gelap.png') }}" alt="BENTENG" class="!h-[15px] !w-auto dark:!hidden">
+                    <img src="{{ asset('assets/images/teks-terang.png') }}" alt="BENTENG" class="!hidden !h-[15px] !w-auto dark:!block">
+                </span>
             </a>
         </header>
 
@@ -72,6 +77,7 @@
             </button>
 
             <div class="ms-auto flex items-center gap-3">
+                <x-tombol-tema />
                 @if (config('benteng.mode_demo'))
                     <span class="badge badge--soft badge--warning" title="Data simulasi dan sensor tiruan, tanpa perangkat sungguhan">Mode demo</span>
                 @endif
