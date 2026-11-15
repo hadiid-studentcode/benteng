@@ -8,6 +8,8 @@
 <p align="center"><b>Sensor siber tepi untuk jaringan satuan yang tidak punya personel keamanan siber khusus.</b><br>
 Kartika Cyber Hackathon 2026 · Defensive Shield (Penangkalan)</p>
 
+> **Coba langsung:** [benteng.vyndore.web.id](https://benteng.vyndore.web.id) · masuk dengan `analis@demo.local` / `analis-demo` (mode demo, data simulasi)
+>
 > **Video demo:** _(tautan menyusul)_
 
 Sensor murah berbasis OpenWrt dipasang di gerbang jaringan satuan. Sensor mengenali perangkat yang berperilaku seperti terinfeksi, lalu analis memutuskan tindakan dari satu dashboard: **mengarantina satu perangkat** atau **memblokir domain untuk seluruh jaringan**. Semua berjalan di server milik satuan, tanpa layanan cloud asing.
@@ -21,7 +23,7 @@ Sensor murah berbasis OpenWrt dipasang di gerbang jaringan satuan. Sensor mengen
 - [Yang dilakukan BENTENG](#yang-dilakukan-benteng)
 - [Arsitektur](#arsitektur)
 - [Hasil evaluasi](#hasil-evaluasi)
-- [Cara mencoba](#cara-mencoba)
+- [Cara mencoba](#cara-mencoba) (atau langsung di [benteng.vyndore.web.id](https://benteng.vyndore.web.id))
   - [Cara 1: Mode demo](#cara-1-mode-demo) (tanpa sensor, sekitar 5 menit)
   - [Cara 2: Lab VirtualBox](#cara-2-lab-virtualbox) (sensor dan korban di VM)
   - [Cara 3: Router OpenWrt](#cara-3-router-openwrt) (perangkat sungguhan)
@@ -65,6 +67,8 @@ Keterbatasan yang sudah diketahui: heartbeat aplikasi sah bisa mirip beacon (ana
 Di lab VirtualBox, karantina diterapkan sensor 2–4 detik setelah analis mengklik, dan blokir domain sekitar 7 detik.
 
 ## Cara mencoba
+
+Cara tercepat tanpa memasang apa pun: buka **[benteng.vyndore.web.id](https://benteng.vyndore.web.id)** dan masuk dengan salah satu [akun demo](#cara-1-mode-demo). Data dan sensornya disimulasikan, dan diperbarui otomatis setiap jam. Semua pengunjung memakai akun yang sama, jadi tindakan orang lain bisa terlihat.
 
 | | Butuh | Waktu | Hasilnya |
 | --- | --- | --- | --- |
