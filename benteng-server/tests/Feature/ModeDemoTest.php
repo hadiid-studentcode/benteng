@@ -17,6 +17,20 @@ class ModeDemoTest extends TestCase
         config(['benteng.mode_demo' => true, 'benteng.sensor_token' => 'token-uji']);
     }
 
+    public function test_login_page_shows_demo_accounts_only_in_demo_mode(): void
+    {
+        $this->aktifkanModeDemo();
+        $this->get(route('login'))->assertOk()
+            ->assertSee('Akun demo untuk juri')
+            ->assertSee('analis@demo.local')
+            ->assertSee('pengamat-demo');
+
+        config(['benteng.mode_demo' => false]);
+        $this->get(route('login'))->assertOk()
+            ->assertDontSee('Akun demo untuk juri')
+            ->assertDontSee('analis@demo.local');
+    }
+
     public function test_setup_refuses_to_overwrite_existing_lab_data(): void
     {
         config(['benteng.mode_demo' => false]);

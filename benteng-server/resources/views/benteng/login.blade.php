@@ -45,6 +45,24 @@
                 <button type="submit" class="button button--primary button--block button--lg">Masuk</button>
             </form>
 
+            @if (config('benteng.mode_demo'))
+                <div class="rounded-lg border border-dashed border-border p-4" data-akun-demo>
+                    <p class="text-sm font-semibold">Akun demo untuk juri</p>
+                    <p class="mt-0.5 text-xs text-muted-foreground">Klik "Pakai akun ini", lalu tekan Masuk.</p>
+                    <ul class="mt-3 flex flex-col gap-2">
+                        @foreach (\App\Console\Commands\SiapkanDemoCommand::AKUN as $emailDemo => [$namaDemo, $peranDemo, $sandiDemo])
+                            <li class="flex items-center justify-between gap-3 rounded-md bg-muted/50 px-3 py-2">
+                                <div class="min-w-0 text-sm">
+                                    <p class="font-medium">{{ ucfirst($peranDemo) }} <span class="text-xs font-normal text-muted-foreground">· {{ $peranDemo === 'analis' ? 'bisa bertindak' : 'hanya melihat' }}</span></p>
+                                    <p class="font-mono text-xs break-all text-muted-foreground">{{ $emailDemo }} / {{ $sandiDemo }}</p>
+                                </div>
+                                <button type="button" class="button button--outline button--sm shrink-0" data-isi-email="{{ $emailDemo }}" data-isi-sandi="{{ $sandiDemo }}">Pakai akun ini</button>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <p class="text-center text-sm text-muted-foreground">Setiap tindakan di dashboard tercatat atas nama akun Anda.</p>
         </div>
     </section>

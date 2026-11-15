@@ -24,6 +24,21 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// --- Isi otomatis akun demo di halaman login ------------------------------------
+document.addEventListener('click', (e) => {
+    const tombol = e.target.closest('[data-isi-email]');
+    if (!tombol) {
+        return;
+    }
+    const email = document.getElementById('email');
+    const sandi = document.getElementById('password');
+    if (email && sandi) {
+        email.value = tombol.dataset.isiEmail;
+        sandi.value = tombol.dataset.isiSandi;
+        tombol.closest('form, .auth__form')?.querySelector('button[type=submit]')?.focus();
+    }
+});
+
 // --- Notifikasi setelah tindakan ------------------------------------------------
 
 // Ikon bawaan toast Stisla butuh pustaka Lucide; di sini cukup dua ikon statis.
