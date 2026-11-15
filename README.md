@@ -56,7 +56,7 @@ Di lab, karantina diterapkan sensor 2–4 detik setelah analis mengklik dan blok
 
 ## Coba langsung (tanpa sensor dan tanpa VM)
 
-Butuh PHP 8.5, Composer, dan Node.js. Pemasangan pertama sekitar 5 menit karena mengunduh dependensi.
+Butuh PHP 8.4.1 atau lebih baru (teruji di 8.5), Composer, dan Node.js. Pemasangan pertama sekitar 5 menit karena mengunduh dependensi.
 
 ```powershell
 git clone https://github.com/hadiid-studentcode/benteng.git
@@ -72,7 +72,7 @@ Buka `http://localhost:8000` dan masuk dengan salah satu akun demo:
 | `analis@demo.local` | `analis-demo` | Analis: bisa mengarantina, memblokir domain, dan menutup insiden |
 | `pengamat@demo.local` | `pengamat-demo` | Pengamat: hanya melihat |
 
-Mode demo berisi data simulasi 25 menit terakhir: PC staf yang terinfeksi (beaconing dan domain acak), PC staf lain yang normal, dan laptop tamu yang belum dikenal. Sensornya ditiru oleh server, jadi karantina dan blokir domain "diterapkan" sekitar 2 detik setelah diklik. Pada lab sungguhan, perintah yang sama dijalankan oleh sensor OpenWrt (2-4 detik untuk karantina).
+Mode demo berisi data simulasi 25 menit terakhir: PC staf yang terinfeksi (beaconing dan domain acak), PC staf lain yang normal, dan laptop tamu yang belum dikenal. Di dashboard, analis juga bisa menekan tombol **Coba simulasi serangan** untuk memunculkan PC terinfeksi atau perangkat asing baru, lalu melihat insidennya terdeteksi dalam beberapa detik. Sensornya ditiru oleh server, jadi karantina dan blokir domain "diterapkan" sekitar 2 detik setelah diklik. Pada lab sungguhan, perintah yang sama dijalankan oleh sensor OpenWrt (2-4 detik untuk karantina).
 
 Uji kualitas detektor dan test otomatis, dari folder yang sama:
 
@@ -82,7 +82,7 @@ php artisan test
 ```
 
 - Perintah evaluasi menjalankan 11 skenario serangan dan trafik normal sebanyak 100 kali, lalu mencetak angka yang sama dengan [Hasil evaluasi](#hasil-evaluasi): 599/600 terdeteksi dan 0/300 alarm palsu.
-- `php artisan test` menjalankan 63 test otomatis: ingest data sensor, deteksi, karantina, blokir domain, login dan peran, jejak audit, serta mode demo.
+- `php artisan test` menjalankan 66 test otomatis: ingest data sensor, deteksi, karantina, blokir domain, login dan peran, jejak audit, serta mode demo dan simulasi.
 
 ## Menjalankan dengan sensor sungguhan
 
@@ -93,6 +93,33 @@ php artisan benteng:pengguna analis@satuan.mil --nama="Nama Analis"   # kata san
 php artisan serve --host=0.0.0.0 --port=8000
 php artisan schedule:work   # di terminal kedua: detektor otomatis tiap menit
 ```
+
+## Deploy mode demo ke hosting
+
+Server butuh PHP 8.4.1 atau lebih baru (teruji di 8.5) dengan ekstensi `pdo_sqlite`, Composer, akses SSH, dan cron. Hosting yang hanya menyediakan PHP 8.3 tidak bisa dipakai, karena beberapa dependensi mensyaratkan PHP 8.4.1.
+
+1. Arahkan document root domain ke folder `benteng-server/public`, dan pakai HTTPS.
+2. Di server, dari folder `benteng-server`:
+
+   ```sh
+   composer install --no-dev --optimize-autoloader
+   cp .env.example .env
+   php artisan key:generate
+   touch database/database.sqlite
+   php artisan migrate --force
+   php artisan benteng:siapkan-demo
+   php artisan config:cache && php artisan route:cache && php artisan view:cache
+   ```
+
+   Bila server tidak punya Node.js, jalankan `npm install && npm run build` di komputer sendiri lalu unggah folder `public/build`.
+3. Di `.env`, isi `APP_ENV=production`, `APP_DEBUG=false`, dan `APP_URL=https://domain-anda`. Langkah `benteng:siapkan-demo` sudah mengisi `BENTENG_MODE_DEMO=true` dan token sensor. Setelah mengubah `.env`, jalankan ulang `php artisan config:cache`.
+4. Tambahkan cron agar data demo dibuat ulang setiap jam:
+
+   ```
+   * * * * * cd /path/ke/benteng-server && php artisan schedule:run >> /dev/null 2>&1
+   ```
+
+Semua pengunjung memakai akun demo yang sama, jadi tindakan satu orang terlihat oleh yang lain sampai data dibuat ulang. Folder `storage`, `bootstrap/cache`, dan `database` harus bisa ditulis oleh web server.
 
 ## Isi repo
 

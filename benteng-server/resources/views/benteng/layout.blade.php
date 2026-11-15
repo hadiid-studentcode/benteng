@@ -72,6 +72,9 @@
             </button>
 
             <div class="ms-auto flex items-center gap-3">
+                @if (config('benteng.mode_demo'))
+                    <span class="badge badge--soft badge--warning" title="Data simulasi dan sensor tiruan, tanpa perangkat sungguhan">Mode demo</span>
+                @endif
                 <span class="hidden items-center gap-2 text-xs text-muted-foreground md:flex" title="Halaman diperbarui otomatis tiap 5 detik">
                     <span class="indicator indicator--success" data-titik-segar></span>
                     <span data-teks-segar>Diperbarui {{ $lencana['waktu'] }}</span>

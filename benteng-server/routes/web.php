@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InsidenController;
 use App\Http\Controllers\PerangkatController;
 use App\Http\Controllers\SesiController;
+use App\Http\Controllers\SimulasiController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
@@ -35,5 +36,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/insiden/{id}/blokir-domain', [BlokirController::class, 'dariInsiden'])->whereNumber('id')->name('benteng.blokir.insiden');
         Route::post('/blokir', [BlokirController::class, 'store'])->name('benteng.blokir.tambah');
         Route::post('/blokir/{id}/lepas', [BlokirController::class, 'lepas'])->whereNumber('id')->name('benteng.blokir.lepas');
+
+        // Hanya aktif pada mode demo (BENTENG_MODE_DEMO=true).
+        Route::post('/simulasi', [SimulasiController::class, 'store'])->middleware('throttle:10,1')->name('benteng.simulasi');
     });
 });

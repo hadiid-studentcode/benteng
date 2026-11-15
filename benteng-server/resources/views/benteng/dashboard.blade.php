@@ -63,6 +63,27 @@
             </div>
         @endif
 
+        {{-- Mode demo: juri bisa memicu aktivitas mencurigakan sendiri --}}
+        @if (config('benteng.mode_demo') && $bisaBertindak)
+            <x-kartu judul="Coba simulasi serangan" keterangan="Mode demo: buat aktivitas mencurigakan, lalu lihat BENTENG mendeteksi dan menanganinya">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <p class="max-w-2xl text-sm leading-6 text-muted-foreground">Data dibuat di server, tanpa perangkat sungguhan. Aktivitas 6 menit dibuat sekaligus, jadi insiden muncul dalam beberapa detik. Setelah itu, coba karantina perangkatnya atau blokir domainnya.</p>
+                    <div class="flex flex-wrap gap-2">
+                        <form method="POST" action="{{ route('benteng.simulasi') }}" data-aksi>
+                            @csrf
+                            <input type="hidden" name="jenis" value="terinfeksi">
+                            <x-tombol type="submit" varian="bahaya"><x-ikon nama="aktivitas" class="size-4" />PC terinfeksi malware</x-tombol>
+                        </form>
+                        <form method="POST" action="{{ route('benteng.simulasi') }}" data-aksi>
+                            @csrf
+                            <input type="hidden" name="jenis" value="asing">
+                            <x-tombol type="submit"><x-ikon nama="perangkat" class="size-4" />Perangkat asing bergabung</x-tombol>
+                        </form>
+                    </div>
+                </div>
+            </x-kartu>
+        @endif
+
         {{-- Ringkasan angka --}}
         <div class="grid grid-cols-12 gap-4">
             @foreach ([

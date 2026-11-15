@@ -85,6 +85,45 @@ class ModeDemoTest extends TestCase
         $this->assertDatabaseHas('commands', ['status' => 'selesai']);
     }
 
+    public function test_simulated_infected_pc_is_detected_as_beaconing_and_dga(): void
+    {
+        $this->aktifkanModeDemo();
+        $analis = User::factory()->create(['peran' => 'analis']);
+
+        $this->actingAs($analis)
+            ->post(route('benteng.simulasi'), ['jenis' => 'terinfeksi'])
+            ->assertSessionHas('pesan');
+        $this->artisan('benteng:sensor-tiruan')->assertSuccessful();
+
+        $this->assertDatabaseHas('perangkat', ['ip' => '192.168.1.150', 'dikenal' => true]);
+        $this->assertDatabaseHas('incidents', ['jenis' => 'beaconing', 'client_ip' => '192.168.1.150', 'status' => 'baru']);
+        $this->assertDatabaseHas('incidents', ['jenis' => 'dga', 'client_ip' => '192.168.1.150']);
+    }
+
+    public function test_simulated_unknown_device_is_reported(): void
+    {
+        $this->aktifkanModeDemo();
+        $analis = User::factory()->create(['peran' => 'analis']);
+
+        $this->actingAs($analis)->post(route('benteng.simulasi'), ['jenis' => 'asing']);
+        $this->artisan('benteng:sensor-tiruan')->assertSuccessful();
+
+        $this->assertDatabaseHas('incidents', ['jenis' => 'perangkat_asing', 'client_ip' => '192.168.1.150']);
+    }
+
+    public function test_simulation_is_unavailable_outside_demo_mode_and_for_observers(): void
+    {
+        config(['benteng.mode_demo' => false]);
+        $analis = User::factory()->create(['peran' => 'analis']);
+        $this->actingAs($analis)->post(route('benteng.simulasi'), ['jenis' => 'asing'])->assertNotFound();
+
+        $this->aktifkanModeDemo();
+        $pengamat = User::factory()->create(['peran' => 'pengamat']);
+        $this->actingAs($pengamat)->post(route('benteng.simulasi'), ['jenis' => 'asing'])->assertForbidden();
+
+        $this->assertDatabaseCount('perangkat', 0);
+    }
+
     public function test_simulated_sensor_refuses_outside_demo_mode(): void
     {
         config(['benteng.mode_demo' => false]);

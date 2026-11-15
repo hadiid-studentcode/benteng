@@ -184,7 +184,7 @@ benteng/
 │  ├─ resources/{css/app.css, js/app.js}    # Stisla + Tailwind v4, modal, toast, penyegaran otomatis
 │  ├─ resources/css/meridian/               # tata letak dari template Meridian Stisla (MIT)
 │  ├─ routes/{web.php, api.php, console.php}
-│  ├─ tests/Feature/                        # 63 test (php artisan test)
+│  ├─ tests/Feature/                        # 66 test (php artisan test)
 │  └─ docs/README.md                        # dokumen ini
 │
 └─ benteng-starter/                        # file untuk sensor & lab (disalin via scp)
